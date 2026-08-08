@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Http\Controllers\Concerns\PaginatesRequests;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Department\DepartmentRequest;
 use App\Http\Resources\DepartmentResource;
@@ -13,9 +14,11 @@ use Illuminate\Support\Str;
 
 class DepartmentController extends Controller
 {
+    use PaginatesRequests;
+
     public function index(Request $request): array
     {
-        $perPage = min((int) $request->integer('perPage', 20), 2000);
+        $perPage = $this->perPageFrom($request);
 
         $query = Department::query()->orderBy('name');
 

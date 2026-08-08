@@ -42,9 +42,26 @@ class DepartmentTest extends TestCase
         $response = $this->actingAs($admin)->getJson('/api/departamentos');
 
         $response->assertOk()
-            ->assertJsonStructure(['data', 'meta' => ['total', 'page', 'perPage', 'totalPages']])
+            ->assertJsonStructure(['data', 'meta' => ['currentPage', 'perPage', 'total', 'lastPage']])
             ->assertJsonCount(3, 'data')
             ->assertJsonPath('meta.total', 3);
+    }
+
+    public function test_index_respeita_o_parametro_per_page_snake_case(): void
+    {
+        // O frontend envia sempre `page`/`per_page` (snake_case) mesmo com o
+        // resto do contrato em camelCase — ver services/api/departamentos.ts
+        // `toQuery()`. Regressão: perPage (camelCase) já foi lido por engano.
+        Department::factory()->count(5)->create();
+        $admin = $this->userWithRole(AppRole::Admin);
+
+        $response = $this->actingAs($admin)->getJson('/api/departamentos?per_page=2&page=2');
+
+        $response->assertOk()
+            ->assertJsonCount(2, 'data')
+            ->assertJsonPath('meta.perPage', 2)
+            ->assertJsonPath('meta.currentPage', 2)
+            ->assertJsonPath('meta.lastPage', 3);
     }
 
     public function test_store_cria_departamento_como_admin(): void

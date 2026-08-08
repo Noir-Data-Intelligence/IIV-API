@@ -6,11 +6,13 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
- * Envelope `{ data, meta: { total, page, perPage, totalPages } }` — a forma
- * exacta de `Paginated<T>` em Front-end/src/types/dto/paginated.ts, que
- * TODOS os hooks `use*List` do frontend esperam (ver PLANO-BACKEND-
- * LARAVEL.txt seccao 4.2). Nunca usar o paginator JSON por omissao do
- * Laravel (snake_case, forma diferente).
+ * Envelope `{ data, meta: { currentPage, perPage, total, lastPage } }` — a
+ * forma EXACTA de `PaginatedMeta`/`Paginated<T>` em
+ * Front-end/src/types/dto/paginated.ts (verificado directamente contra o
+ * ficheiro, não contra a paráfrase da memória do projecto — `page`/
+ * `totalPages` NÃO existem no contrato real, são `currentPage`/`lastPage`).
+ * Nunca usar o paginator JSON por omissão do Laravel (snake_case, forma
+ * diferente).
  *
  * Uso: `return PaginatedResponse::make($paginator, DepartmentResource::class);`
  */
@@ -24,10 +26,10 @@ final class PaginatedResponse
         return [
             'data' => $resourceClass::collection(collect($paginator->items()))->resolve(),
             'meta' => [
-                'total' => $paginator->total(),
-                'page' => $paginator->currentPage(),
+                'currentPage' => $paginator->currentPage(),
                 'perPage' => $paginator->perPage(),
-                'totalPages' => $paginator->lastPage(),
+                'total' => $paginator->total(),
+                'lastPage' => $paginator->lastPage(),
             ],
         ];
     }
