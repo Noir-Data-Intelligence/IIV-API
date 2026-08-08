@@ -1,0 +1,31 @@
+<?php
+
+namespace App\Models;
+
+use Database\Factories\FormacaoFactory;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class Formacao extends Model
+{
+    /** @use HasFactory<FormacaoFactory> */
+    use HasFactory, HasUuids;
+
+    public $timestamps = false;
+
+    protected $fillable = [
+        'id', 'title', 'description', 'trainer', 'location', 'start_date', 'end_date',
+        'hours', 'status', 'notes', 'created_at',
+    ];
+
+    protected function casts(): array
+    {
+        return [
+            'start_date' => 'date',
+            'end_date' => 'date',
+            'hours' => 'decimal:1',
+            'created_at' => 'datetime',
+        ];
+    }
+}

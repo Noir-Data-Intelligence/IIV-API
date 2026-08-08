@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\AmostraController;
 use App\Http\Controllers\Api\AuditoriaController;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\AvaliacaoController;
 use App\Http\Controllers\Api\BoletimController;
 use App\Http\Controllers\Api\ChatAssistantController;
 use App\Http\Controllers\Api\ContaController;
@@ -16,12 +17,14 @@ use App\Http\Controllers\Api\DistribuicaoController;
 use App\Http\Controllers\Api\DocumentLinkController;
 use App\Http\Controllers\Api\DocumentoController;
 use App\Http\Controllers\Api\DocumentPermissionController;
+use App\Http\Controllers\Api\FormacaoController;
 use App\Http\Controllers\Api\HeroSlideController;
 use App\Http\Controllers\Api\InqueritoSatisfacaoController;
 use App\Http\Controllers\Api\LaboratorioController;
 use App\Http\Controllers\Api\LancamentoController;
 use App\Http\Controllers\Api\LegislacaoController;
 use App\Http\Controllers\Api\LoteController;
+use App\Http\Controllers\Api\MissaoController;
 use App\Http\Controllers\Api\NaoConformidadeController;
 use App\Http\Controllers\Api\NoticiaController;
 use App\Http\Controllers\Api\NotificationController;
@@ -35,6 +38,8 @@ use App\Http\Controllers\Api\ProdutoController;
 use App\Http\Controllers\Api\PublicStatsController;
 use App\Http\Controllers\Api\RbacController;
 use App\Http\Controllers\Api\RequisicaoController;
+use App\Http\Controllers\Api\RhLaboratorioController;
+use App\Http\Controllers\Api\RhTransversalController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -290,4 +295,103 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/patrimonio-estacao/manutencoes', [PatrimonioEstacaoController::class, 'manutencoesStore'])->middleware('module:patrimonio,write');
     Route::put('/patrimonio-estacao/manutencoes/{manutencao}', [PatrimonioEstacaoController::class, 'manutencoesUpdate'])->middleware('module:patrimonio,write');
     Route::delete('/patrimonio-estacao/manutencoes/{manutencao}', [PatrimonioEstacaoController::class, 'manutencoesDestroy'])->middleware('module:patrimonio,write');
+
+    // --- Onda 8 — RH Transversal — esquema separado ---------------------------
+    // Dualidade obrigatória (ver SIG-IIV-MEMORIA-PROJETO.md secção 6): NUNCA
+    // partilhar tabela/controller/rota com o RH Laboratorial abaixo.
+    Route::get('/rh-transversal/colaboradores', [RhTransversalController::class, 'index'])->middleware('module:rh');
+    Route::post('/rh-transversal/colaboradores', [RhTransversalController::class, 'store'])->middleware('module:rh,write');
+    Route::put('/rh-transversal/colaboradores/{colaborador}', [RhTransversalController::class, 'update'])->middleware('module:rh,write');
+    Route::delete('/rh-transversal/colaboradores/{colaborador}', [RhTransversalController::class, 'destroy'])->middleware('module:rh,write');
+
+    Route::get('/rh-transversal/contratos', [RhTransversalController::class, 'contratosIndex'])->middleware('module:rh');
+    Route::post('/rh-transversal/contratos', [RhTransversalController::class, 'contratosStore'])->middleware('module:rh,write');
+    Route::put('/rh-transversal/contratos/{contrato}', [RhTransversalController::class, 'contratosUpdate'])->middleware('module:rh,write');
+    Route::delete('/rh-transversal/contratos/{contrato}', [RhTransversalController::class, 'contratosDestroy'])->middleware('module:rh,write');
+
+    Route::get('/rh-transversal/ausencias', [RhTransversalController::class, 'ausenciasIndex'])->middleware('module:rh');
+    Route::post('/rh-transversal/ausencias', [RhTransversalController::class, 'ausenciasStore'])->middleware('module:rh,write');
+    Route::put('/rh-transversal/ausencias/{ausencia}', [RhTransversalController::class, 'ausenciasUpdate'])->middleware('module:rh,write');
+    Route::delete('/rh-transversal/ausencias/{ausencia}', [RhTransversalController::class, 'ausenciasDestroy'])->middleware('module:rh,write');
+
+    // --- Onda 8 — RH Laboratorial — esquema separado ---------------------------
+    Route::get('/rh-laboratorio/colaboradores', [RhLaboratorioController::class, 'index'])->middleware('module:rh');
+    Route::post('/rh-laboratorio/colaboradores', [RhLaboratorioController::class, 'store'])->middleware('module:rh,write');
+    Route::put('/rh-laboratorio/colaboradores/{colaborador}', [RhLaboratorioController::class, 'update'])->middleware('module:rh,write');
+    Route::delete('/rh-laboratorio/colaboradores/{colaborador}', [RhLaboratorioController::class, 'destroy'])->middleware('module:rh,write');
+
+    Route::get('/rh-laboratorio/contratos', [RhLaboratorioController::class, 'contratosIndex'])->middleware('module:rh');
+    Route::post('/rh-laboratorio/contratos', [RhLaboratorioController::class, 'contratosStore'])->middleware('module:rh,write');
+    Route::put('/rh-laboratorio/contratos/{contrato}', [RhLaboratorioController::class, 'contratosUpdate'])->middleware('module:rh,write');
+    Route::delete('/rh-laboratorio/contratos/{contrato}', [RhLaboratorioController::class, 'contratosDestroy'])->middleware('module:rh,write');
+
+    Route::get('/rh-laboratorio/ausencias', [RhLaboratorioController::class, 'ausenciasIndex'])->middleware('module:rh');
+    Route::post('/rh-laboratorio/ausencias', [RhLaboratorioController::class, 'ausenciasStore'])->middleware('module:rh,write');
+    Route::put('/rh-laboratorio/ausencias/{ausencia}', [RhLaboratorioController::class, 'ausenciasUpdate'])->middleware('module:rh,write');
+    Route::delete('/rh-laboratorio/ausencias/{ausencia}', [RhLaboratorioController::class, 'ausenciasDestroy'])->middleware('module:rh,write');
+
+    // --- Onda 8 — Formações ----------------------------------------------------
+    Route::get('/formacoes', [FormacaoController::class, 'index'])->middleware('module:rh');
+    Route::post('/formacoes', [FormacaoController::class, 'store'])->middleware('module:rh,write');
+    Route::put('/formacoes/{formacao}', [FormacaoController::class, 'update'])->middleware('module:rh,write');
+    Route::delete('/formacoes/{formacao}', [FormacaoController::class, 'destroy'])->middleware('module:rh,write');
+
+    // --- Onda 8 — Missões (3ª máquina de estados) -------------------------------
+    // /missoes/stats tem de vir ANTES de /missoes/{missao}, mesma armadilha de
+    // ordenação já resolvida na Onda 2 (/hero-slides/admin) e na Onda 6
+    // (/processos/stats).
+    Route::get('/missoes/stats', [MissaoController::class, 'stats'])->middleware('module:missoes');
+    Route::get('/missoes', [MissaoController::class, 'index'])->middleware('module:missoes');
+    Route::post('/missoes', [MissaoController::class, 'store'])->middleware('module:missoes,write');
+    Route::get('/missoes/{missao}', [MissaoController::class, 'show'])->middleware('module:missoes');
+    Route::put('/missoes/{missao}', [MissaoController::class, 'update'])->middleware('module:missoes,write');
+    Route::delete('/missoes/{missao}', [MissaoController::class, 'destroy'])->middleware('module:missoes,write');
+
+    Route::post('/missoes/{missao}/submeter', [MissaoController::class, 'submit'])->middleware('module:missoes,write');
+    Route::post('/missoes/{missao}/aprovar', [MissaoController::class, 'approve'])->middleware('module:missoes,write');
+    Route::post('/missoes/{missao}/rejeitar', [MissaoController::class, 'reject'])->middleware('module:missoes,write');
+
+    Route::get('/missoes/{missao}/participantes', [MissaoController::class, 'participants'])->middleware('module:missoes');
+    Route::post('/missoes/{missao}/participantes', [MissaoController::class, 'storeParticipant'])->middleware('module:missoes,write');
+    Route::delete('/missoes/{missao}/participantes/{participante}', [MissaoController::class, 'destroyParticipant'])->middleware('module:missoes,write');
+
+    Route::get('/missoes/{missao}/guia', [MissaoController::class, 'guide'])->middleware('module:missoes');
+    Route::put('/missoes/{missao}/guia', [MissaoController::class, 'updateGuide'])->middleware('module:missoes,write');
+
+    Route::get('/missoes/{missao}/despesas', [MissaoController::class, 'expenses'])->middleware('module:missoes');
+    Route::post('/missoes/{missao}/despesas', [MissaoController::class, 'storeExpense'])->middleware('module:missoes,write');
+    Route::delete('/missoes/{missao}/despesas/{despesa}', [MissaoController::class, 'destroyExpense'])->middleware('module:missoes,write');
+
+    Route::get('/missoes/{missao}/relatorio', [MissaoController::class, 'report'])->middleware('module:missoes');
+    Route::put('/missoes/{missao}/relatorio', [MissaoController::class, 'updateReport'])->middleware('module:missoes,write');
+    Route::post('/missoes/{missao}/relatorio/aprovar', [MissaoController::class, 'approveReport'])->middleware('module:missoes,write');
+
+    // --- Onda 8 — Avaliações de desempenho (4ª máquina de estados) -------------
+    // /avaliacoes/ciclos, /avaliacoes/criterios e /avaliacoes/stats têm de vir
+    // ANTES de /avaliacoes/{avaliacao} (mesma armadilha de ordenação).
+    Route::get('/avaliacoes/ciclos', [AvaliacaoController::class, 'cyclesIndex'])->middleware('module:avaliacoes');
+    Route::post('/avaliacoes/ciclos', [AvaliacaoController::class, 'cyclesStore'])->middleware('module:avaliacoes,write');
+    Route::put('/avaliacoes/ciclos/{ciclo}', [AvaliacaoController::class, 'cyclesUpdate'])->middleware('module:avaliacoes,write');
+    Route::delete('/avaliacoes/ciclos/{ciclo}', [AvaliacaoController::class, 'cyclesDestroy'])->middleware('module:avaliacoes,write');
+
+    Route::get('/avaliacoes/criterios', [AvaliacaoController::class, 'criteriaIndex'])->middleware('module:avaliacoes');
+    Route::post('/avaliacoes/criterios', [AvaliacaoController::class, 'criteriaStore'])->middleware('module:avaliacoes,write');
+    Route::put('/avaliacoes/criterios/{criterio}', [AvaliacaoController::class, 'criteriaUpdate'])->middleware('module:avaliacoes,write');
+    Route::delete('/avaliacoes/criterios/{criterio}', [AvaliacaoController::class, 'criteriaDestroy'])->middleware('module:avaliacoes,write');
+
+    Route::get('/avaliacoes/stats', [AvaliacaoController::class, 'stats'])->middleware('module:avaliacoes');
+    Route::get('/avaliacoes', [AvaliacaoController::class, 'index'])->middleware('module:avaliacoes');
+    Route::post('/avaliacoes', [AvaliacaoController::class, 'store'])->middleware('module:avaliacoes,write');
+    Route::get('/avaliacoes/{avaliacao}', [AvaliacaoController::class, 'show'])->middleware('module:avaliacoes');
+    Route::put('/avaliacoes/{avaliacao}', [AvaliacaoController::class, 'update'])->middleware('module:avaliacoes,write');
+    Route::delete('/avaliacoes/{avaliacao}', [AvaliacaoController::class, 'destroy'])->middleware('module:avaliacoes,write');
+
+    Route::get('/avaliacoes/{avaliacao}/pontuacoes', [AvaliacaoController::class, 'scores'])->middleware('module:avaliacoes');
+    Route::get('/avaliacoes/{avaliacao}/historico', [AvaliacaoController::class, 'history'])->middleware('module:avaliacoes');
+
+    Route::post('/avaliacoes/{avaliacao}/submeter', [AvaliacaoController::class, 'submit'])->middleware('module:avaliacoes,write');
+    Route::post('/avaliacoes/{avaliacao}/aprovar', [AvaliacaoController::class, 'approve'])->middleware('module:avaliacoes,write');
+    Route::post('/avaliacoes/{avaliacao}/rejeitar', [AvaliacaoController::class, 'reject'])->middleware('module:avaliacoes,write');
+    Route::post('/avaliacoes/{avaliacao}/validar', [AvaliacaoController::class, 'validate'])->middleware('module:avaliacoes,write');
+    Route::post('/avaliacoes/{avaliacao}/reabrir', [AvaliacaoController::class, 'reopen'])->middleware('module:avaliacoes,write');
 });
