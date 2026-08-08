@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AmostraController;
+use App\Http\Controllers\Api\AuditoriaController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BoletimController;
 use App\Http\Controllers\Api\ChatAssistantController;
@@ -16,6 +17,7 @@ use App\Http\Controllers\Api\InqueritoSatisfacaoController;
 use App\Http\Controllers\Api\LaboratorioController;
 use App\Http\Controllers\Api\LegislacaoController;
 use App\Http\Controllers\Api\LoteController;
+use App\Http\Controllers\Api\NaoConformidadeController;
 use App\Http\Controllers\Api\NoticiaController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\PlanoController;
@@ -173,4 +175,17 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/distribuicao', [DistribuicaoController::class, 'store'])->middleware('module:distribuicao,write');
     Route::put('/distribuicao/{distribuicao}', [DistribuicaoController::class, 'update'])->middleware('module:distribuicao,write');
     Route::delete('/distribuicao/{distribuicao}', [DistribuicaoController::class, 'destroy'])->middleware('module:distribuicao,write');
+
+    // --- Onda 5 — Qualidade ---------------------------------------------------
+    Route::get('/auditorias', [AuditoriaController::class, 'index'])->middleware('module:auditorias');
+    Route::get('/auditorias/{auditoria}', [AuditoriaController::class, 'show'])->middleware('module:auditorias');
+    Route::post('/auditorias', [AuditoriaController::class, 'store'])->middleware('module:auditorias,write');
+    Route::put('/auditorias/{auditoria}', [AuditoriaController::class, 'update'])->middleware('module:auditorias,write');
+    Route::delete('/auditorias/{auditoria}', [AuditoriaController::class, 'destroy'])->middleware('module:auditorias,write');
+
+    Route::get('/nao-conformidades', [NaoConformidadeController::class, 'index'])->middleware('module:nao-conformidades');
+    Route::get('/nao-conformidades/{naoConformidade}', [NaoConformidadeController::class, 'show'])->middleware('module:nao-conformidades');
+    Route::post('/nao-conformidades', [NaoConformidadeController::class, 'store'])->middleware('module:nao-conformidades,write');
+    Route::put('/nao-conformidades/{naoConformidade}', [NaoConformidadeController::class, 'update'])->middleware('module:nao-conformidades,write');
+    Route::delete('/nao-conformidades/{naoConformidade}', [NaoConformidadeController::class, 'destroy'])->middleware('module:nao-conformidades,write');
 });
