@@ -12,6 +12,9 @@ use App\Http\Controllers\Api\DashboardAlertHistoryController;
 use App\Http\Controllers\Api\DashboardPrefController;
 use App\Http\Controllers\Api\DepartmentController;
 use App\Http\Controllers\Api\DistribuicaoController;
+use App\Http\Controllers\Api\DocumentLinkController;
+use App\Http\Controllers\Api\DocumentoController;
+use App\Http\Controllers\Api\DocumentPermissionController;
 use App\Http\Controllers\Api\HeroSlideController;
 use App\Http\Controllers\Api\InqueritoSatisfacaoController;
 use App\Http\Controllers\Api\LaboratorioController;
@@ -21,6 +24,8 @@ use App\Http\Controllers\Api\NaoConformidadeController;
 use App\Http\Controllers\Api\NoticiaController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\PlanoController;
+use App\Http\Controllers\Api\ProcessoController;
+use App\Http\Controllers\Api\ProcessTypeController;
 use App\Http\Controllers\Api\ProdutoController;
 use App\Http\Controllers\Api\PublicStatsController;
 use App\Http\Controllers\Api\RbacController;
@@ -188,4 +193,56 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/nao-conformidades', [NaoConformidadeController::class, 'store'])->middleware('module:nao-conformidades,write');
     Route::put('/nao-conformidades/{naoConformidade}', [NaoConformidadeController::class, 'update'])->middleware('module:nao-conformidades,write');
     Route::delete('/nao-conformidades/{naoConformidade}', [NaoConformidadeController::class, 'destroy'])->middleware('module:nao-conformidades,write');
+
+    // --- Onda 6 — Gestão: Documentos ------------------------------------------
+    Route::get('/document-categories', [DocumentoController::class, 'categories'])->middleware('module:documentos');
+
+    Route::get('/documentos', [DocumentoController::class, 'index'])->middleware('module:documentos');
+    Route::post('/documentos', [DocumentoController::class, 'store'])->middleware('module:documentos,write');
+    Route::get('/documentos/{documento}', [DocumentoController::class, 'show'])->middleware('module:documentos');
+    Route::put('/documentos/{documento}', [DocumentoController::class, 'update'])->middleware('module:documentos,write');
+    Route::delete('/documentos/{documento}', [DocumentoController::class, 'destroy'])->middleware('module:documentos,write');
+    Route::get('/documentos/{documento}/versions', [DocumentoController::class, 'versions'])->middleware('module:documentos');
+    Route::post('/documentos/{documento}/versions', [DocumentoController::class, 'storeVersion'])->middleware('module:documentos,write');
+
+    Route::get('/document-links', [DocumentLinkController::class, 'index'])->middleware('module:documentos');
+    Route::post('/document-links', [DocumentLinkController::class, 'store'])->middleware('module:documentos,write');
+    Route::delete('/document-links/{documentLink}', [DocumentLinkController::class, 'destroy'])->middleware('module:documentos,write');
+
+    Route::get('/document-permissions', [DocumentPermissionController::class, 'index'])->middleware('module:documentos');
+    Route::post('/document-permissions', [DocumentPermissionController::class, 'store'])->middleware('module:documentos,write');
+    Route::delete('/document-permissions/{documentPermission}', [DocumentPermissionController::class, 'destroy'])->middleware('module:documentos,write');
+
+    // --- Onda 6 — Gestão: Tipos de Processo -----------------------------------
+    Route::get('/processos-tipos', [ProcessTypeController::class, 'index'])->middleware('module:processos');
+    Route::post('/processos-tipos', [ProcessTypeController::class, 'store'])->middleware('module:processos,write');
+    Route::put('/processos-tipos/{processoTipo}', [ProcessTypeController::class, 'update'])->middleware('module:processos,write');
+    Route::delete('/processos-tipos/{processoTipo}', [ProcessTypeController::class, 'destroy'])->middleware('module:processos,write');
+    Route::get('/processos-tipos/{processoTipo}/etapas', [ProcessTypeController::class, 'steps'])->middleware('module:processos');
+    Route::post('/processos-tipos/{processoTipo}/etapas', [ProcessTypeController::class, 'storeStep'])->middleware('module:processos,write');
+    Route::post('/processos-tipos/{processoTipo}/etapas/reordenar', [ProcessTypeController::class, 'reorderSteps'])->middleware('module:processos,write');
+    Route::put('/processos-tipos/{processoTipo}/etapas/{etapa}', [ProcessTypeController::class, 'updateStep'])->middleware('module:processos,write');
+    Route::delete('/processos-tipos/{processoTipo}/etapas/{etapa}', [ProcessTypeController::class, 'destroyStep'])->middleware('module:processos,write');
+
+    // --- Onda 6 — Gestão: Processos (BPM) -------------------------------------
+    Route::get('/processos/stats', [ProcessoController::class, 'stats'])->middleware('module:processos');
+    Route::get('/processos', [ProcessoController::class, 'index'])->middleware('module:processos');
+    Route::post('/processos', [ProcessoController::class, 'store'])->middleware('module:processos,write');
+    Route::get('/processos/{processo}', [ProcessoController::class, 'show'])->middleware('module:processos');
+    Route::put('/processos/{processo}', [ProcessoController::class, 'update'])->middleware('module:processos,write');
+    Route::delete('/processos/{processo}', [ProcessoController::class, 'destroy'])->middleware('module:processos,write');
+
+    Route::get('/processos/{processo}/etapas', [ProcessoController::class, 'steps'])->middleware('module:processos');
+    Route::put('/processos/{processo}/etapas/{etapa}', [ProcessoController::class, 'updateStep'])->middleware('module:processos,write');
+
+    Route::get('/processos/{processo}/eventos', [ProcessoController::class, 'events'])->middleware('module:processos');
+    Route::post('/processos/{processo}/eventos', [ProcessoController::class, 'storeEvent'])->middleware('module:processos,write');
+
+    Route::post('/processos/{processo}/avancar', [ProcessoController::class, 'advance'])->middleware('module:processos,write');
+    Route::post('/processos/{processo}/devolver', [ProcessoController::class, 'returnStep'])->middleware('module:processos,write');
+    Route::post('/processos/{processo}/cancelar', [ProcessoController::class, 'cancel'])->middleware('module:processos,write');
+
+    Route::get('/processos/{processo}/anexos', [ProcessoController::class, 'attachments'])->middleware('module:processos');
+    Route::post('/processos/{processo}/anexos', [ProcessoController::class, 'storeAttachment'])->middleware('module:processos,write');
+    Route::delete('/processos/{processo}/anexos/{anexo}', [ProcessoController::class, 'destroyAttachment'])->middleware('module:processos,write');
 });
