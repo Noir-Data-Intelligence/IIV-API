@@ -24,7 +24,7 @@ class PatrimonioEstacaoRequest extends FormRequest
             ])],
             'description' => ['nullable', 'string'],
             'location' => ['nullable', 'string', 'max:255'],
-            'stationId' => ['required', 'uuid'],
+            'stationId' => ['required', 'uuid', 'exists:estacoes,id'],
             'departmentId' => ['nullable', 'uuid', 'exists:departments,id'],
             'responsibleUser' => ['nullable', 'string', 'max:255'],
             'acquisitionDate' => ['nullable', 'date'],

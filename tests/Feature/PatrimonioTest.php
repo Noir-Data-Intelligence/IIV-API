@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Enums\AppRole;
+use App\Models\Estacao;
 use App\Models\PatrimonioCentral;
 use App\Models\PatrimonioCentralManutencao;
 use App\Models\PatrimonioEstacao;
@@ -82,9 +83,11 @@ class PatrimonioTest extends TestCase
             'code' => 'PAT-EST-100', 'name' => 'Gerador', 'category' => 'energia',
         ])->assertUnprocessable();
 
+        $estacao = Estacao::factory()->create();
+
         $this->actingAs($user)->postJson('/api/patrimonio-estacao', [
             'code' => 'PAT-EST-100', 'name' => 'Gerador', 'category' => 'energia',
-            'stationId' => (string) Str::uuid(),
+            'stationId' => $estacao->id,
         ])->assertCreated();
     }
 

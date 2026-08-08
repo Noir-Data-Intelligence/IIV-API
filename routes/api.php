@@ -1,6 +1,8 @@
 <?php
 
+use App\Http\Controllers\Api\AgriculturaController;
 use App\Http\Controllers\Api\AmostraController;
+use App\Http\Controllers\Api\AnimalController;
 use App\Http\Controllers\Api\AuditoriaController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\AvaliacaoController;
@@ -17,9 +19,11 @@ use App\Http\Controllers\Api\DistribuicaoController;
 use App\Http\Controllers\Api\DocumentLinkController;
 use App\Http\Controllers\Api\DocumentoController;
 use App\Http\Controllers\Api\DocumentPermissionController;
+use App\Http\Controllers\Api\EstacaoController;
 use App\Http\Controllers\Api\FormacaoController;
 use App\Http\Controllers\Api\HeroSlideController;
 use App\Http\Controllers\Api\InqueritoSatisfacaoController;
+use App\Http\Controllers\Api\InseminacaoController;
 use App\Http\Controllers\Api\LaboratorioController;
 use App\Http\Controllers\Api\LancamentoController;
 use App\Http\Controllers\Api\LegislacaoController;
@@ -34,12 +38,14 @@ use App\Http\Controllers\Api\PatrimonioEstacaoController;
 use App\Http\Controllers\Api\PlanoController;
 use App\Http\Controllers\Api\ProcessoController;
 use App\Http\Controllers\Api\ProcessTypeController;
+use App\Http\Controllers\Api\ProducaoPecuariaController;
 use App\Http\Controllers\Api\ProdutoController;
 use App\Http\Controllers\Api\PublicStatsController;
 use App\Http\Controllers\Api\RbacController;
 use App\Http\Controllers\Api\RequisicaoController;
 use App\Http\Controllers\Api\RhLaboratorioController;
 use App\Http\Controllers\Api\RhTransversalController;
+use App\Http\Controllers\Api\StockController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -394,4 +400,85 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/avaliacoes/{avaliacao}/rejeitar', [AvaliacaoController::class, 'reject'])->middleware('module:avaliacoes,write');
     Route::post('/avaliacoes/{avaliacao}/validar', [AvaliacaoController::class, 'validate'])->middleware('module:avaliacoes,write');
     Route::post('/avaliacoes/{avaliacao}/reabrir', [AvaliacaoController::class, 'reopen'])->middleware('module:avaliacoes,write');
+
+    // --- Onda 9 — Estações Zootécnicas -----------------------------------------
+    Route::get('/estacoes', [EstacaoController::class, 'index'])->middleware('module:estacoes');
+    Route::post('/estacoes', [EstacaoController::class, 'store'])->middleware('module:estacoes,write');
+    Route::put('/estacoes/{estacao}', [EstacaoController::class, 'update'])->middleware('module:estacoes,write');
+    Route::delete('/estacoes/{estacao}', [EstacaoController::class, 'destroy'])->middleware('module:estacoes,write');
+
+    // --- Onda 9 — Stock ---------------------------------------------------------
+    Route::get('/stock/itens', [StockController::class, 'itensIndex'])->middleware('module:stock');
+    Route::post('/stock/itens', [StockController::class, 'itensStore'])->middleware('module:stock,write');
+    Route::put('/stock/itens/{item}', [StockController::class, 'itensUpdate'])->middleware('module:stock,write');
+    Route::delete('/stock/itens/{item}', [StockController::class, 'itensDestroy'])->middleware('module:stock,write');
+
+    Route::get('/stock/localizacoes', [StockController::class, 'localizacoesIndex'])->middleware('module:stock');
+    Route::post('/stock/localizacoes', [StockController::class, 'localizacoesStore'])->middleware('module:stock,write');
+    Route::put('/stock/localizacoes/{localizacao}', [StockController::class, 'localizacoesUpdate'])->middleware('module:stock,write');
+    Route::delete('/stock/localizacoes/{localizacao}', [StockController::class, 'localizacoesDestroy'])->middleware('module:stock,write');
+
+    Route::get('/stock/movimentos', [StockController::class, 'movimentosIndex'])->middleware('module:stock');
+    Route::post('/stock/movimentos', [StockController::class, 'movimentosStore'])->middleware('module:stock,write');
+    Route::delete('/stock/movimentos/{movimento}', [StockController::class, 'movimentosDestroy'])->middleware('module:stock,write');
+
+    // --- Onda 9 — Agricultura ----------------------------------------------------
+    Route::get('/culturas', [AgriculturaController::class, 'culturasIndex'])->middleware('module:agricultura');
+    Route::post('/culturas', [AgriculturaController::class, 'culturasStore'])->middleware('module:agricultura,write');
+    Route::put('/culturas/{cultura}', [AgriculturaController::class, 'culturasUpdate'])->middleware('module:agricultura,write');
+    Route::delete('/culturas/{cultura}', [AgriculturaController::class, 'culturasDestroy'])->middleware('module:agricultura,write');
+
+    Route::get('/campos', [AgriculturaController::class, 'camposIndex'])->middleware('module:agricultura');
+    Route::post('/campos', [AgriculturaController::class, 'camposStore'])->middleware('module:agricultura,write');
+    Route::put('/campos/{campo}', [AgriculturaController::class, 'camposUpdate'])->middleware('module:agricultura,write');
+    Route::delete('/campos/{campo}', [AgriculturaController::class, 'camposDestroy'])->middleware('module:agricultura,write');
+
+    Route::get('/colheitas', [AgriculturaController::class, 'colheitasIndex'])->middleware('module:agricultura');
+    Route::post('/colheitas', [AgriculturaController::class, 'colheitasStore'])->middleware('module:agricultura,write');
+    Route::put('/colheitas/{colheita}', [AgriculturaController::class, 'colheitasUpdate'])->middleware('module:agricultura,write');
+    Route::delete('/colheitas/{colheita}', [AgriculturaController::class, 'colheitasDestroy'])->middleware('module:agricultura,write');
+
+    // --- Onda 9 — Produção Pecuária ----------------------------------------------
+    Route::get('/producao-pecuaria', [ProducaoPecuariaController::class, 'index'])->middleware('module:pecuaria');
+    Route::post('/producao-pecuaria', [ProducaoPecuariaController::class, 'store'])->middleware('module:pecuaria,write');
+    Route::put('/producao-pecuaria/{producao}', [ProducaoPecuariaController::class, 'update'])->middleware('module:pecuaria,write');
+    Route::delete('/producao-pecuaria/{producao}', [ProducaoPecuariaController::class, 'destroy'])->middleware('module:pecuaria,write');
+
+    // --- Onda 9 — Animais ---------------------------------------------------------
+    Route::get('/animais', [AnimalController::class, 'index'])->middleware('module:animais');
+    Route::post('/animais', [AnimalController::class, 'store'])->middleware('module:animais,write');
+    Route::put('/animais/{animal}', [AnimalController::class, 'update'])->middleware('module:animais,write');
+    Route::delete('/animais/{animal}', [AnimalController::class, 'destroy'])->middleware('module:animais,write');
+
+    Route::get('/animais/{animal}/eventos', [AnimalController::class, 'events'])->middleware('module:animais');
+    Route::post('/animais/{animal}/eventos', [AnimalController::class, 'storeEvent'])->middleware('module:animais,write');
+
+    Route::get('/animais/{animal}/saude', [AnimalController::class, 'healthRecords'])->middleware('module:animais');
+    Route::post('/animais/{animal}/saude', [AnimalController::class, 'storeHealthRecord'])->middleware('module:animais,write');
+
+    // --- Onda 9 — Inseminação Artificial (sem paginação, fiel ao mock) -----------
+    Route::get('/inseminacao/centros', [InseminacaoController::class, 'centros'])->middleware('module:inseminacao');
+    Route::post('/inseminacao/centros', [InseminacaoController::class, 'storeCentro'])->middleware('module:inseminacao,write');
+    Route::put('/inseminacao/centros/{centro}', [InseminacaoController::class, 'updateCentro'])->middleware('module:inseminacao,write');
+    Route::delete('/inseminacao/centros/{centro}', [InseminacaoController::class, 'destroyCentro'])->middleware('module:inseminacao,write');
+
+    Route::get('/inseminacao/reprodutores', [InseminacaoController::class, 'reprodutores'])->middleware('module:inseminacao');
+    Route::post('/inseminacao/reprodutores', [InseminacaoController::class, 'storeReprodutor'])->middleware('module:inseminacao,write');
+    Route::put('/inseminacao/reprodutores/{reprodutor}', [InseminacaoController::class, 'updateReprodutor'])->middleware('module:inseminacao,write');
+    Route::delete('/inseminacao/reprodutores/{reprodutor}', [InseminacaoController::class, 'destroyReprodutor'])->middleware('module:inseminacao,write');
+
+    Route::get('/inseminacao/tanques', [InseminacaoController::class, 'tanques'])->middleware('module:inseminacao');
+    Route::post('/inseminacao/tanques', [InseminacaoController::class, 'storeTanque'])->middleware('module:inseminacao,write');
+    Route::put('/inseminacao/tanques/{tanque}', [InseminacaoController::class, 'updateTanque'])->middleware('module:inseminacao,write');
+    Route::delete('/inseminacao/tanques/{tanque}', [InseminacaoController::class, 'destroyTanque'])->middleware('module:inseminacao,write');
+
+    Route::get('/inseminacao/doses', [InseminacaoController::class, 'doses'])->middleware('module:inseminacao');
+    Route::post('/inseminacao/doses', [InseminacaoController::class, 'storeDose'])->middleware('module:inseminacao,write');
+    Route::put('/inseminacao/doses/{dose}', [InseminacaoController::class, 'updateDose'])->middleware('module:inseminacao,write');
+    Route::delete('/inseminacao/doses/{dose}', [InseminacaoController::class, 'destroyDose'])->middleware('module:inseminacao,write');
+
+    Route::get('/inseminacao/registos', [InseminacaoController::class, 'registos'])->middleware('module:inseminacao');
+    Route::post('/inseminacao/registos', [InseminacaoController::class, 'storeRegisto'])->middleware('module:inseminacao,write');
+    Route::put('/inseminacao/registos/{registo}', [InseminacaoController::class, 'updateRegisto'])->middleware('module:inseminacao,write');
+    Route::delete('/inseminacao/registos/{registo}', [InseminacaoController::class, 'destroyRegisto'])->middleware('module:inseminacao,write');
 });

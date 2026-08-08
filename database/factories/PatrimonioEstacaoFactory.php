@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Models\Estacao;
 use App\Models\PatrimonioEstacao;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -18,7 +19,7 @@ class PatrimonioEstacaoFactory extends Factory
             'category' => fake()->randomElement(['equipamento', 'mobiliario', 'informatica', 'viatura', 'outros']),
             'description' => fake()->optional()->sentence(),
             'location' => fake()->optional()->words(2, true),
-            'station_id' => fake()->uuid(),
+            'station_id' => Estacao::factory(),
             'department_id' => null,
             'responsible_user' => fake()->optional()->name(),
             'acquisition_date' => fake()->date(),
