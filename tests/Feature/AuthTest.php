@@ -87,8 +87,8 @@ class AuthTest extends TestCase
 
         $response = $this->actingAs($user)->getJson('/api/user');
 
-        $response->assertOk()->assertJsonPath('data.email', 'teste@iiv.demo')
-            ->assertJsonPath('data.roles', ['tecnico']);
+        $response->assertOk()->assertJsonPath('email', 'teste@iiv.demo')
+            ->assertJsonPath('roles', ['tecnico']);
     }
 
     public function test_registo_cria_conta_com_papel_recepcionista_por_omissao(): void
@@ -100,7 +100,7 @@ class AuthTest extends TestCase
             'password_confirmation' => 'password123',
         ]);
 
-        $response->assertCreated()->assertJsonPath('data.roles', ['recepcionista']);
+        $response->assertCreated()->assertJsonPath('roles', ['recepcionista']);
         $this->assertDatabaseHas('users', ['email' => 'novo@iiv.demo']);
     }
 

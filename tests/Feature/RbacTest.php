@@ -68,7 +68,7 @@ class RbacTest extends TestCase
         $response = $this->actingAs($admin)->getJson('/api/rbac/permissions');
 
         // 11 papeis nao-admin x 38 modulos.
-        $response->assertOk()->assertJsonCount(11 * count(ModuleKey::ALL), 'data');
+        $response->assertOk()->assertJsonCount(11 * count(ModuleKey::ALL));
     }
 
     public function test_put_permissions_substitui_a_matriz_e_invalida_a_cache(): void
@@ -94,7 +94,7 @@ class RbacTest extends TestCase
         $this->actingAs($admin)
             ->postJson("/api/rbac/users/{$target->id}/roles", ['role' => 'gestor-stock'])
             ->assertOk()
-            ->assertJsonPath('data.roles', ['gestor-stock']);
+            ->assertJsonPath('roles', ['gestor-stock']);
 
         $this->actingAs($admin)
             ->deleteJson("/api/rbac/users/{$target->id}/roles/gestor-stock")

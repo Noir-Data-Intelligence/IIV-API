@@ -2,13 +2,22 @@
 
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\ChatAssistantController;
+use App\Http\Controllers\Api\ContactMessageController;
+use App\Http\Controllers\Api\DashboardAlertAckController;
+use App\Http\Controllers\Api\DashboardAlertHistoryController;
+use App\Http\Controllers\Api\DashboardPrefController;
 use App\Http\Controllers\Api\DepartmentController;
+use App\Http\Controllers\Api\HeroSlideController;
+use App\Http\Controllers\Api\LegislacaoController;
+use App\Http\Controllers\Api\NoticiaController;
+use App\Http\Controllers\Api\NotificationController;
+use App\Http\Controllers\Api\PublicStatsController;
 use App\Http\Controllers\Api\RbacController;
 use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
-| Onda 1 — Fundação (ver SIG-IIV-MEMORIA-PROJETO.md secção 15)
+| Onda 1 — Fundação + Onda 2 — Geral (ver SIG-IIV-MEMORIA-PROJETO.md secção 15)
 |--------------------------------------------------------------------------
 | Fonte de verdade do contrato: Front-end/src/services/api/endpoints.ts.
 | Caminhos e nomes ficam EXACTAMENTE como no frontend — nunca traduzir.
@@ -19,6 +28,18 @@ Route::post('/login', [AuthController::class, 'login']);
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
 Route::post('/reset-password', [AuthController::class, 'resetPassword']);
+
+// --- Rotas públicas de conteúdo (Onda 2) — sem auth:sanctum ------------------
+// GET honra o filtro `published` só se o cliente o enviar, nunca o impõe
+// (fiel ao handler mock — ver NoticiaController/LegislacaoController).
+Route::get('/noticias', [NoticiaController::class, 'index']);
+Route::get('/noticias/{id}', [NoticiaController::class, 'show']);
+Route::get('/legislacao', [LegislacaoController::class, 'index']);
+Route::get('/legislacao/{id}', [LegislacaoController::class, 'show']);
+Route::get('/hero-slides', [HeroSlideController::class, 'index']);
+Route::get('/public/stats', [PublicStatsController::class, 'show']);
+Route::post('/contact-messages', [ContactMessageController::class, 'store'])
+    ->middleware('throttle:10,1');
 
 // --- Rotas autenticadas -------------------------------------------------
 Route::middleware('auth:sanctum')->group(function () {
@@ -45,4 +66,47 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/users/{user}/roles', [RbacController::class, 'addRole'])->middleware('module:rbac,write');
         Route::delete('/users/{user}/roles/{role}', [RbacController::class, 'removeRole'])->middleware('module:rbac,write');
     });
+
+    // --- Noticias / Legislacao (escrita) ---------------------------------
+    Route::post('/noticias', [NoticiaController::class, 'store'])->middleware('module:noticias,write');
+    Route::put('/noticias/{noticia}', [NoticiaController::class, 'update'])->middleware('module:noticias,write');
+    Route::delete('/noticias/{noticia}', [NoticiaController::class, 'destroy'])->middleware('module:noticias,write');
+
+    Route::post('/legislacao', [LegislacaoController::class, 'store'])->middleware('module:legislacao,write');
+    Route::put('/legislacao/{id}', [LegislacaoController::class, 'update'])->middleware('module:legislacao,write');
+    Route::delete('/legislacao/{id}', [LegislacaoController::class, 'destroy'])->middleware('module:legislacao,write');
+
+    // --- Hero Slides (admin) ----------------------------------------------
+    // /hero-slides/admin tem de vir ANTES de /hero-slides/{heroSlide} (mais
+    // especifico primeiro), senão "admin" seria interpretado como um id.
+    Route::get('/hero-slides/admin', [HeroSlideController::class, 'adminIndex'])->middleware('module:slideshow');
+    Route::post('/hero-slides', [HeroSlideController::class, 'store'])->middleware('module:slideshow,write');
+    Route::put('/hero-slides/{heroSlide}', [HeroSlideController::class, 'update'])->middleware('module:slideshow,write');
+    Route::delete('/hero-slides/{heroSlide}', [HeroSlideController::class, 'destroy'])->middleware('module:slideshow,write');
+
+    // --- Mensagens de contacto (caixa de entrada admin) --------------------
+    Route::get('/contact-messages', [ContactMessageController::class, 'index'])->middleware('module:mensagens');
+    Route::patch('/contact-messages/{contactMessage}', [ContactMessageController::class, 'update'])->middleware('module:mensagens,write');
+    Route::delete('/contact-messages/{contactMessage}', [ContactMessageController::class, 'destroy'])->middleware('module:mensagens,write');
+
+    // --- Notificacoes (por utilizador, sem module gate — ver ModuleKey) ---
+    Route::get('/notifications', [NotificationController::class, 'index']);
+    Route::patch('/notifications/{notification}', [NotificationController::class, 'update']);
+    Route::post('/notifications/mark-all-read', [NotificationController::class, 'markAllRead']);
+    Route::delete('/notifications/{notification}', [NotificationController::class, 'destroy']);
+    Route::delete('/notifications', [NotificationController::class, 'clear']);
+
+    // --- Dashboard prefs / alert acks (por utilizador) ---------------------
+    Route::get('/dashboard-prefs/me', [DashboardPrefController::class, 'show']);
+    Route::put('/dashboard-prefs/me', [DashboardPrefController::class, 'update']);
+
+    Route::get('/dashboard-alert-acks', [DashboardAlertAckController::class, 'index']);
+    Route::post('/dashboard-alert-acks', [DashboardAlertAckController::class, 'store']);
+    Route::delete('/dashboard-alert-acks/{metricKey}', [DashboardAlertAckController::class, 'destroy']);
+
+    // --- Historico de alertas (modulo "historico-alertas") -----------------
+    Route::get('/dashboard-alert-history', [DashboardAlertHistoryController::class, 'index'])->middleware('module:historico-alertas');
+    Route::post('/dashboard-alert-history', [DashboardAlertHistoryController::class, 'store']);
+    Route::put('/dashboard-alert-history/{dashboardAlertHistory}', [DashboardAlertHistoryController::class, 'update'])->middleware('module:historico-alertas,write');
+    Route::delete('/dashboard-alert-history', [DashboardAlertHistoryController::class, 'clear'])->middleware('module:historico-alertas,write');
 });

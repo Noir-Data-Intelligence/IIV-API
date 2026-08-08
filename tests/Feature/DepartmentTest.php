@@ -73,7 +73,7 @@ class DepartmentTest extends TestCase
             'description' => 'Descrição de teste.',
         ]);
 
-        $response->assertCreated()->assertJsonPath('data.name', 'Departamento Novo');
+        $response->assertCreated()->assertJsonPath('name', 'Departamento Novo');
         $this->assertDatabaseHas('departments', ['name' => 'Departamento Novo']);
     }
 
@@ -97,7 +97,7 @@ class DepartmentTest extends TestCase
             'name' => 'Nome Novo',
         ]);
 
-        $response->assertOk()->assertJsonPath('data.name', 'Nome Novo');
+        $response->assertOk()->assertJsonPath('name', 'Nome Novo');
     }
 
     public function test_destroy_remove_o_departamento_como_admin(): void
