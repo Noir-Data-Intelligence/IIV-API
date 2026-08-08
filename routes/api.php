@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\AuditoriaController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BoletimController;
 use App\Http\Controllers\Api\ChatAssistantController;
+use App\Http\Controllers\Api\ContaController;
 use App\Http\Controllers\Api\ContactMessageController;
 use App\Http\Controllers\Api\CriterioRejeicaoController;
 use App\Http\Controllers\Api\DashboardAlertAckController;
@@ -18,11 +19,15 @@ use App\Http\Controllers\Api\DocumentPermissionController;
 use App\Http\Controllers\Api\HeroSlideController;
 use App\Http\Controllers\Api\InqueritoSatisfacaoController;
 use App\Http\Controllers\Api\LaboratorioController;
+use App\Http\Controllers\Api\LancamentoController;
 use App\Http\Controllers\Api\LegislacaoController;
 use App\Http\Controllers\Api\LoteController;
 use App\Http\Controllers\Api\NaoConformidadeController;
 use App\Http\Controllers\Api\NoticiaController;
 use App\Http\Controllers\Api\NotificationController;
+use App\Http\Controllers\Api\OrcamentoController;
+use App\Http\Controllers\Api\PatrimonioCentralController;
+use App\Http\Controllers\Api\PatrimonioEstacaoController;
 use App\Http\Controllers\Api\PlanoController;
 use App\Http\Controllers\Api\ProcessoController;
 use App\Http\Controllers\Api\ProcessTypeController;
@@ -245,4 +250,44 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/processos/{processo}/anexos', [ProcessoController::class, 'attachments'])->middleware('module:processos');
     Route::post('/processos/{processo}/anexos', [ProcessoController::class, 'storeAttachment'])->middleware('module:processos,write');
     Route::delete('/processos/{processo}/anexos/{anexo}', [ProcessoController::class, 'destroyAttachment'])->middleware('module:processos,write');
+
+    // --- Onda 7 — Financeiro ---------------------------------------------------
+    Route::get('/contas', [ContaController::class, 'index'])->middleware('module:financeiro');
+    Route::post('/contas', [ContaController::class, 'store'])->middleware('module:financeiro,write');
+    Route::put('/contas/{conta}', [ContaController::class, 'update'])->middleware('module:financeiro,write');
+    Route::delete('/contas/{conta}', [ContaController::class, 'destroy'])->middleware('module:financeiro,write');
+
+    Route::get('/lancamentos', [LancamentoController::class, 'index'])->middleware('module:financeiro');
+    Route::post('/lancamentos', [LancamentoController::class, 'store'])->middleware('module:financeiro,write');
+    Route::put('/lancamentos/{lancamento}', [LancamentoController::class, 'update'])->middleware('module:financeiro,write');
+    Route::delete('/lancamentos/{lancamento}', [LancamentoController::class, 'destroy'])->middleware('module:financeiro,write');
+
+    Route::get('/orcamentos', [OrcamentoController::class, 'index'])->middleware('module:financeiro');
+    Route::post('/orcamentos', [OrcamentoController::class, 'store'])->middleware('module:financeiro,write');
+    Route::put('/orcamentos/{orcamento}', [OrcamentoController::class, 'update'])->middleware('module:financeiro,write');
+    Route::delete('/orcamentos/{orcamento}', [OrcamentoController::class, 'destroy'])->middleware('module:financeiro,write');
+
+    // --- Onda 7 — Património Central (DG/Lab) — esquema separado -------------
+    // Dualidade obrigatória (ver SIG-IIV-MEMORIA-PROJETO.md secção 6): NUNCA
+    // partilhar tabela/controller/rota com o Património de Estação abaixo.
+    Route::get('/patrimonio-central', [PatrimonioCentralController::class, 'index'])->middleware('module:patrimonio');
+    Route::post('/patrimonio-central', [PatrimonioCentralController::class, 'store'])->middleware('module:patrimonio,write');
+    Route::put('/patrimonio-central/{patrimonioCentral}', [PatrimonioCentralController::class, 'update'])->middleware('module:patrimonio,write');
+    Route::delete('/patrimonio-central/{patrimonioCentral}', [PatrimonioCentralController::class, 'destroy'])->middleware('module:patrimonio,write');
+
+    Route::get('/patrimonio-central/manutencoes', [PatrimonioCentralController::class, 'manutencoesIndex'])->middleware('module:patrimonio');
+    Route::post('/patrimonio-central/manutencoes', [PatrimonioCentralController::class, 'manutencoesStore'])->middleware('module:patrimonio,write');
+    Route::put('/patrimonio-central/manutencoes/{manutencao}', [PatrimonioCentralController::class, 'manutencoesUpdate'])->middleware('module:patrimonio,write');
+    Route::delete('/patrimonio-central/manutencoes/{manutencao}', [PatrimonioCentralController::class, 'manutencoesDestroy'])->middleware('module:patrimonio,write');
+
+    // --- Onda 7 — Património de Estação — esquema separado -------------------
+    Route::get('/patrimonio-estacao', [PatrimonioEstacaoController::class, 'index'])->middleware('module:patrimonio');
+    Route::post('/patrimonio-estacao', [PatrimonioEstacaoController::class, 'store'])->middleware('module:patrimonio,write');
+    Route::put('/patrimonio-estacao/{patrimonioEstacao}', [PatrimonioEstacaoController::class, 'update'])->middleware('module:patrimonio,write');
+    Route::delete('/patrimonio-estacao/{patrimonioEstacao}', [PatrimonioEstacaoController::class, 'destroy'])->middleware('module:patrimonio,write');
+
+    Route::get('/patrimonio-estacao/manutencoes', [PatrimonioEstacaoController::class, 'manutencoesIndex'])->middleware('module:patrimonio');
+    Route::post('/patrimonio-estacao/manutencoes', [PatrimonioEstacaoController::class, 'manutencoesStore'])->middleware('module:patrimonio,write');
+    Route::put('/patrimonio-estacao/manutencoes/{manutencao}', [PatrimonioEstacaoController::class, 'manutencoesUpdate'])->middleware('module:patrimonio,write');
+    Route::delete('/patrimonio-estacao/manutencoes/{manutencao}', [PatrimonioEstacaoController::class, 'manutencoesDestroy'])->middleware('module:patrimonio,write');
 });
