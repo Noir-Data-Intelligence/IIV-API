@@ -10,12 +10,16 @@ use App\Http\Controllers\Api\DashboardAlertAckController;
 use App\Http\Controllers\Api\DashboardAlertHistoryController;
 use App\Http\Controllers\Api\DashboardPrefController;
 use App\Http\Controllers\Api\DepartmentController;
+use App\Http\Controllers\Api\DistribuicaoController;
 use App\Http\Controllers\Api\HeroSlideController;
 use App\Http\Controllers\Api\InqueritoSatisfacaoController;
 use App\Http\Controllers\Api\LaboratorioController;
 use App\Http\Controllers\Api\LegislacaoController;
+use App\Http\Controllers\Api\LoteController;
 use App\Http\Controllers\Api\NoticiaController;
 use App\Http\Controllers\Api\NotificationController;
+use App\Http\Controllers\Api\PlanoController;
+use App\Http\Controllers\Api\ProdutoController;
 use App\Http\Controllers\Api\PublicStatsController;
 use App\Http\Controllers\Api\RbacController;
 use App\Http\Controllers\Api\RequisicaoController;
@@ -146,4 +150,27 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/boletins/{boletim}/comunicar', [BoletimController::class, 'comunicar'])->middleware('module:resultados,write');
 
     Route::get('/inqueritos-satisfacao', [InqueritoSatisfacaoController::class, 'index'])->middleware('module:analises');
+
+    // --- Onda 4 — Produção ---------------------------------------------------
+    Route::get('/produtos', [ProdutoController::class, 'index'])->middleware('module:produtos');
+    Route::post('/produtos', [ProdutoController::class, 'store'])->middleware('module:produtos,write');
+    Route::put('/produtos/{produto}', [ProdutoController::class, 'update'])->middleware('module:produtos,write');
+    Route::delete('/produtos/{produto}', [ProdutoController::class, 'destroy'])->middleware('module:produtos,write');
+    Route::post('/produtos/{produto}/archive', [ProdutoController::class, 'archive'])->middleware('module:produtos,write');
+    Route::post('/produtos/{produto}/restore', [ProdutoController::class, 'restore'])->middleware('module:produtos,write');
+
+    Route::get('/lotes', [LoteController::class, 'index'])->middleware('module:lotes');
+    Route::post('/lotes', [LoteController::class, 'store'])->middleware('module:lotes,write');
+    Route::put('/lotes/{lote}', [LoteController::class, 'update'])->middleware('module:lotes,write');
+    Route::delete('/lotes/{lote}', [LoteController::class, 'destroy'])->middleware('module:lotes,write');
+
+    Route::get('/planeamento', [PlanoController::class, 'index'])->middleware('module:planeamento');
+    Route::post('/planeamento', [PlanoController::class, 'store'])->middleware('module:planeamento,write');
+    Route::put('/planeamento/{plano}', [PlanoController::class, 'update'])->middleware('module:planeamento,write');
+    Route::delete('/planeamento/{plano}', [PlanoController::class, 'destroy'])->middleware('module:planeamento,write');
+
+    Route::get('/distribuicao', [DistribuicaoController::class, 'index'])->middleware('module:distribuicao');
+    Route::post('/distribuicao', [DistribuicaoController::class, 'store'])->middleware('module:distribuicao,write');
+    Route::put('/distribuicao/{distribuicao}', [DistribuicaoController::class, 'update'])->middleware('module:distribuicao,write');
+    Route::delete('/distribuicao/{distribuicao}', [DistribuicaoController::class, 'destroy'])->middleware('module:distribuicao,write');
 });
