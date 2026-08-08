@@ -30,6 +30,9 @@ class RequisicaoController extends Controller
         if ($laboratorioId = $request->string('laboratorio_id')->toString()) {
             $query->where('laboratorio_id', $laboratorioId);
         }
+        if ($search = $request->string('search')->toString()) {
+            $query->where(fn ($q) => $q->where('cliente_nome', 'like', "%{$search}%")->orWhere('numero', 'like', "%{$search}%"));
+        }
 
         return PaginatedResponse::make($query->paginate($perPage), RequisicaoResource::class);
     }
