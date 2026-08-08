@@ -1,18 +1,24 @@
 <?php
 
+use App\Http\Controllers\Api\AmostraController;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\BoletimController;
 use App\Http\Controllers\Api\ChatAssistantController;
 use App\Http\Controllers\Api\ContactMessageController;
+use App\Http\Controllers\Api\CriterioRejeicaoController;
 use App\Http\Controllers\Api\DashboardAlertAckController;
 use App\Http\Controllers\Api\DashboardAlertHistoryController;
 use App\Http\Controllers\Api\DashboardPrefController;
 use App\Http\Controllers\Api\DepartmentController;
 use App\Http\Controllers\Api\HeroSlideController;
+use App\Http\Controllers\Api\InqueritoSatisfacaoController;
+use App\Http\Controllers\Api\LaboratorioController;
 use App\Http\Controllers\Api\LegislacaoController;
 use App\Http\Controllers\Api\NoticiaController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\PublicStatsController;
 use App\Http\Controllers\Api\RbacController;
+use App\Http\Controllers\Api\RequisicaoController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -39,6 +45,8 @@ Route::get('/legislacao/{id}', [LegislacaoController::class, 'show']);
 Route::get('/hero-slides', [HeroSlideController::class, 'index']);
 Route::get('/public/stats', [PublicStatsController::class, 'show']);
 Route::post('/contact-messages', [ContactMessageController::class, 'store'])
+    ->middleware('throttle:10,1');
+Route::post('/inqueritos-satisfacao', [InqueritoSatisfacaoController::class, 'store'])
     ->middleware('throttle:10,1');
 
 // --- Rotas autenticadas -------------------------------------------------
@@ -109,4 +117,33 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/dashboard-alert-history', [DashboardAlertHistoryController::class, 'store']);
     Route::put('/dashboard-alert-history/{dashboardAlertHistory}', [DashboardAlertHistoryController::class, 'update'])->middleware('module:historico-alertas,write');
     Route::delete('/dashboard-alert-history', [DashboardAlertHistoryController::class, 'clear'])->middleware('module:historico-alertas,write');
+
+    // --- Onda 3 — Laboratório (ver deep-dive na SIG-IIV-MEMORIA-PROJETO.md secção 15) ---
+    Route::apiResource('laboratorios', LaboratorioController::class)
+        ->middleware(['module:laboratorios'])
+        ->except(['store', 'update', 'destroy']);
+    Route::post('/laboratorios', [LaboratorioController::class, 'store'])->middleware('module:laboratorios,write');
+    Route::put('/laboratorios/{laboratorio}', [LaboratorioController::class, 'update'])->middleware('module:laboratorios,write');
+    Route::delete('/laboratorios/{laboratorio}', [LaboratorioController::class, 'destroy'])->middleware('module:laboratorios,write');
+
+    Route::get('/criterios-rejeicao', [CriterioRejeicaoController::class, 'index'])->middleware('module:laboratorios');
+    Route::post('/criterios-rejeicao', [CriterioRejeicaoController::class, 'store'])->middleware('module:laboratorios,write');
+    Route::delete('/criterios-rejeicao/{criterioRejeicao}', [CriterioRejeicaoController::class, 'destroy'])->middleware('module:laboratorios,write');
+
+    Route::get('/requisicoes', [RequisicaoController::class, 'index'])->middleware('module:analises');
+    Route::post('/requisicoes', [RequisicaoController::class, 'store'])->middleware('module:analises,write');
+    Route::get('/requisicoes/{requisicao}', [RequisicaoController::class, 'show'])->middleware('module:analises');
+
+    Route::get('/amostras', [AmostraController::class, 'index'])->middleware('module:analises');
+    Route::get('/amostras/{amostra}', [AmostraController::class, 'show'])->middleware('module:analises');
+    Route::post('/amostras/{amostra}/aceitar', [AmostraController::class, 'aceitar'])->middleware('module:analises,write');
+    Route::post('/amostras/{amostra}/rejeitar', [AmostraController::class, 'rejeitar'])->middleware('module:analises,write');
+
+    Route::get('/boletins', [BoletimController::class, 'index'])->middleware('module:analises');
+    Route::get('/boletins/{boletim}', [BoletimController::class, 'show'])->middleware('module:analises');
+    Route::put('/boletins/{boletim}/resultado', [BoletimController::class, 'registarResultado'])->middleware('module:analises,write');
+    Route::post('/boletins/{boletim}/validar', [BoletimController::class, 'validar'])->middleware('module:resultados,write');
+    Route::post('/boletins/{boletim}/comunicar', [BoletimController::class, 'comunicar'])->middleware('module:resultados,write');
+
+    Route::get('/inqueritos-satisfacao', [InqueritoSatisfacaoController::class, 'index'])->middleware('module:analises');
 });
