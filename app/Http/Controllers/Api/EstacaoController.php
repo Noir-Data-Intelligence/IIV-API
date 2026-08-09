@@ -40,6 +40,8 @@ class EstacaoController extends Controller
             'name' => $data['name'],
             'station_type' => $data['stationType'] ?? 'zootecnica',
             'location' => $data['location'] ?? null,
+            'latitude' => $data['latitude'] ?? null,
+            'longitude' => $data['longitude'] ?? null,
             'description' => $data['description'] ?? null,
             'is_active' => $data['isActive'] ?? true,
             'created_at' => now(),
@@ -55,6 +57,8 @@ class EstacaoController extends Controller
             'name' => $data['name'] ?? null,
             'station_type' => $data['stationType'] ?? null,
             'location' => array_key_exists('location', $data) ? $data['location'] : $estacao->location,
+            'latitude' => array_key_exists('latitude', $data) ? $data['latitude'] : $estacao->latitude,
+            'longitude' => array_key_exists('longitude', $data) ? $data['longitude'] : $estacao->longitude,
             'description' => array_key_exists('description', $data) ? $data['description'] : $estacao->description,
             'is_active' => $data['isActive'] ?? null,
         ], fn ($v) => $v !== null));

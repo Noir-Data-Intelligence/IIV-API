@@ -19,6 +19,8 @@ class EstacaoRequest extends FormRequest
             'name' => ['required', 'string', 'max:255'],
             'stationType' => ['sometimes', Rule::in(['zootecnica', 'experimental', 'campo'])],
             'location' => ['nullable', 'string', 'max:255'],
+            'latitude' => ['nullable', 'numeric', 'between:-90,90'],
+            'longitude' => ['nullable', 'numeric', 'between:-180,180'],
             'description' => ['nullable', 'string'],
             'isActive' => ['sometimes', 'boolean'],
         ];

@@ -48,7 +48,7 @@ class RbacTest extends TestCase
         $service = app(PermissionMatrixService::class);
         $matrix = $service->forRole(AppRole::Isv);
 
-        $this->assertEqualsCanonicalizing(['painel', 'processos', 'historico-alertas'], $matrix['view']);
+        $this->assertEqualsCanonicalizing(['painel', 'processos', 'historico-alertas', 'observatorio'], $matrix['view']);
         $this->assertSame([], $matrix['write']);
     }
 

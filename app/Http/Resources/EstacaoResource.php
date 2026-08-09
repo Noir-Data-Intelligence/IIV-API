@@ -15,6 +15,8 @@ class EstacaoResource extends JsonResource
             'name' => $this->name,
             'stationType' => $this->station_type,
             'location' => $this->location,
+            'latitude' => $this->latitude !== null ? (float) $this->latitude : null,
+            'longitude' => $this->longitude !== null ? (float) $this->longitude : null,
             'description' => $this->description,
             'isActive' => (bool) $this->is_active,
             'createdAt' => $this->created_at?->toISOString(),

@@ -17,6 +17,8 @@ class AmostraResource extends JsonResource
             'tipoAmostra' => $this->tipo_amostra,
             'origemMatriz' => $this->origem_matriz,
             'pontoColheita' => $this->ponto_colheita,
+            'latitude' => $this->latitude !== null ? (float) $this->latitude : null,
+            'longitude' => $this->longitude !== null ? (float) $this->longitude : null,
             'colhidaPor' => $this->colhida_por,
             'sujeito' => $this->sujeito,
             'recebidaEm' => $this->recebida_em?->toISOString(),

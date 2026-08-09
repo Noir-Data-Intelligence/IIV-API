@@ -33,7 +33,7 @@ class RolePermissionSeeder extends Seeder
                     'painel', 'perfil', 'laboratorios', 'analises', 'resultados', 'insumos',
                     'animais', 'inseminacao', 'auditorias', 'nao-conformidades', 'logs', 'acessibilidade',
                     'historico-alertas', 'documentos', 'processos', 'missoes', 'formacoes', 'investigacao',
-                    'avaliacoes', 'bi',
+                    'avaliacoes', 'bi', 'observatorio',
                 ],
                 'write' => ['laboratorios', 'analises', 'resultados', 'insumos', 'auditorias', 'nao-conformidades', 'documentos', 'processos'],
             ],
@@ -50,7 +50,7 @@ class RolePermissionSeeder extends Seeder
                     'painel', 'perfil', 'laboratorios', 'analises', 'resultados', 'insumos',
                     'animais', 'inseminacao', 'historico-alertas', 'documentos', 'processos',
                     'stock', 'agricultura', 'pecuaria', 'patrimonio', 'missoes', 'formacoes',
-                    'investigacao', 'avaliacoes',
+                    'investigacao', 'avaliacoes', 'observatorio',
                 ],
                 'write' => [
                     'analises', 'resultados', 'insumos', 'animais', 'inseminacao', 'documentos', 'processos',
@@ -78,11 +78,13 @@ class RolePermissionSeeder extends Seeder
                 'write' => ['rh', 'formacoes', 'missoes', 'documentos', 'processos'],
             ],
             AppRole::GestorEstacao->value => [
-                'view' => ['painel', 'perfil', 'estacoes', 'animais', 'inseminacao', 'agricultura', 'pecuaria', 'historico-alertas', 'documentos', 'processos'],
+                'view' => ['painel', 'perfil', 'estacoes', 'animais', 'inseminacao', 'agricultura', 'pecuaria', 'historico-alertas', 'documentos', 'processos', 'observatorio'],
                 'write' => ['estacoes', 'animais', 'inseminacao', 'agricultura', 'pecuaria', 'documentos', 'processos'],
             ],
             AppRole::Isv->value => [
-                'view' => ['painel', 'processos', 'historico-alertas'],
+                // RF-072–075: o Observatório disponibiliza ao ISV a informação
+                // territorial consolidada (RDA §8.2 "Apoio à decisão do ISV").
+                'view' => ['painel', 'processos', 'historico-alertas', 'observatorio'],
                 'write' => [],
             ],
         ];

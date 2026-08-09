@@ -18,11 +18,16 @@ class Estacao extends Model
 
     public $timestamps = false;
 
-    protected $fillable = ['id', 'name', 'station_type', 'location', 'description', 'is_active', 'created_at'];
+    protected $fillable = [
+        'id', 'name', 'station_type', 'location', 'latitude', 'longitude',
+        'description', 'is_active', 'created_at',
+    ];
 
     protected function casts(): array
     {
         return [
+            'latitude' => 'decimal:7',
+            'longitude' => 'decimal:7',
             'is_active' => 'boolean',
             'created_at' => 'datetime',
         ];

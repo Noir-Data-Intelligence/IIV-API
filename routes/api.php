@@ -33,6 +33,7 @@ use App\Http\Controllers\Api\MissaoController;
 use App\Http\Controllers\Api\NaoConformidadeController;
 use App\Http\Controllers\Api\NoticiaController;
 use App\Http\Controllers\Api\NotificationController;
+use App\Http\Controllers\Api\ObservatorioController;
 use App\Http\Controllers\Api\OrcamentoController;
 use App\Http\Controllers\Api\PatrimonioCentralController;
 use App\Http\Controllers\Api\PatrimonioEstacaoController;
@@ -502,4 +503,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/investigacao/publicacoes', [InvestigacaoController::class, 'publicationsStore'])->middleware('module:investigacao,write');
     Route::put('/investigacao/publicacoes/{publicacao}', [InvestigacaoController::class, 'publicationsUpdate'])->middleware('module:investigacao,write');
     Route::delete('/investigacao/publicacoes/{publicacao}', [InvestigacaoController::class, 'publicationsDestroy'])->middleware('module:investigacao,write');
+
+    // --- Onda 11 — Observatório Veterinário Nacional (só Fase 1 da RDA §8.4) ---
+    // Sem contrato de frontend a espelhar (ver nota em ModuleKey::ALL).
+    Route::get('/observatorio/mapa', [ObservatorioController::class, 'mapa'])->middleware('module:observatorio');
 });

@@ -66,6 +66,8 @@ class RequisicaoController extends Controller
                     'tipo_amostra' => $amostraData['tipoAmostra'],
                     'origem_matriz' => $amostraData['origemMatriz'] ?? null,
                     'ponto_colheita' => $amostraData['pontoColheita'] ?? null,
+                    'latitude' => $amostraData['latitude'] ?? null,
+                    'longitude' => $amostraData['longitude'] ?? null,
                     'colhida_por' => $amostraData['colhidaPor'] ?? null,
                     'sujeito' => $amostraData['sujeito'] ?? null,
                     'recebida_em' => now(),

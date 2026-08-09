@@ -8,6 +8,12 @@ namespace App\Enums;
  * Front-end/src/lib/permissions.ts. Novos modulos sao acrescentados aqui
  * a medida que cada Onda os introduz (ver SIG-IIV-MEMORIA-PROJETO.md
  * seccao 15) — nao e um enum porque a lista cresce ao longo do projecto.
+ *
+ * Excepção: 'observatorio' (Onda 11) ainda NÃO existe no frontend — a Onda
+ * 11 não tem nenhum contrato REST a espelhar (sem endpoints, DTOs, páginas
+ * ou mocks), ao contrário de todas as anteriores. Precisa de ser
+ * acrescentado também a `Front-end/src/lib/permissions.ts` quando o
+ * frontend do Observatório for construído.
  */
 final class ModuleKey
 {
@@ -21,6 +27,7 @@ final class ModuleKey
         'historico-alertas', 'documentos', 'processos', 'animais', 'inseminacao',
         'stock', 'agricultura', 'pecuaria', 'financeiro', 'patrimonio',
         'missoes', 'rh', 'formacoes', 'investigacao', 'avaliacoes', 'bi',
+        'observatorio',
     ];
 
     private function __construct() {}

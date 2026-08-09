@@ -18,13 +18,15 @@ class Amostra extends Model
 
     protected $fillable = [
         'id', 'requisicao_id', 'numero', 'tipo_amostra', 'origem_matriz',
-        'ponto_colheita', 'colhida_por', 'sujeito', 'recebida_em', 'status',
+        'ponto_colheita', 'latitude', 'longitude', 'colhida_por', 'sujeito', 'recebida_em', 'status',
     ];
 
     protected function casts(): array
     {
         return [
             'sujeito' => 'array',
+            'latitude' => 'decimal:7',
+            'longitude' => 'decimal:7',
             'recebida_em' => 'datetime',
             'status' => AmostraStatus::class,
         ];

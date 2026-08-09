@@ -32,6 +32,8 @@ class RequisicaoRequest extends FormRequest
             'amostras.*.tipoAmostra' => ['required', 'string', 'max:255'],
             'amostras.*.origemMatriz' => ['nullable', 'string', 'max:255'],
             'amostras.*.pontoColheita' => ['nullable', 'string', 'max:255'],
+            'amostras.*.latitude' => ['nullable', 'numeric', 'between:-90,90'],
+            'amostras.*.longitude' => ['nullable', 'numeric', 'between:-180,180'],
             'amostras.*.colhidaPor' => ['nullable', 'string', 'max:255'],
             'amostras.*.sujeito' => ['nullable', 'array'],
         ];
