@@ -24,6 +24,7 @@ use App\Http\Controllers\Api\FormacaoController;
 use App\Http\Controllers\Api\HeroSlideController;
 use App\Http\Controllers\Api\InqueritoSatisfacaoController;
 use App\Http\Controllers\Api\InseminacaoController;
+use App\Http\Controllers\Api\InsumoController;
 use App\Http\Controllers\Api\InvestigacaoController;
 use App\Http\Controllers\Api\LaboratorioController;
 use App\Http\Controllers\Api\LancamentoController;
@@ -189,6 +190,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/boletins/{boletim}/comunicar', [BoletimController::class, 'comunicar'])->middleware('module:resultados,write');
 
     Route::get('/inqueritos-satisfacao', [InqueritoSatisfacaoController::class, 'index'])->middleware('module:analises');
+
+    Route::get('/insumos', [InsumoController::class, 'index'])->middleware('module:insumos');
+    Route::get('/insumos/{insumo}', [InsumoController::class, 'show'])->middleware('module:insumos');
+    Route::post('/insumos', [InsumoController::class, 'store'])->middleware('module:insumos,write');
+    Route::put('/insumos/{insumo}', [InsumoController::class, 'update'])->middleware('module:insumos,write');
+    Route::delete('/insumos/{insumo}', [InsumoController::class, 'destroy'])->middleware('module:insumos,write');
 
     // --- Onda 4 — Produção ---------------------------------------------------
     Route::get('/produtos', [ProdutoController::class, 'index'])->middleware('module:produtos');
