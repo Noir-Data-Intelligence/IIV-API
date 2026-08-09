@@ -12,12 +12,15 @@ use App\Http\Resources\DocVersionResource;
 use App\Models\DocCategory;
 use App\Models\Documento;
 use App\Models\DocVersion;
+use App\Models\User;
 use App\Support\PaginatedResponse;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Response;
 use Illuminate\Support\Str;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class DocumentoController extends Controller
 {
@@ -33,6 +36,7 @@ class DocumentoController extends Controller
         $perPage = $this->perPageFrom($request);
 
         $query = Documento::query()->orderByDesc('updated_at');
+        $this->scopeToVisible($query, $request->user());
 
         if ($search = $request->string('search')->toString()) {
             $query->where(fn ($q) => $q->where('title', 'like', "%{$search}%")
@@ -48,9 +52,68 @@ class DocumentoController extends Controller
         return PaginatedResponse::make($query->paginate($perPage), DocumentoResource::class);
     }
 
-    public function show(Documento $documento): DocumentoResource
+    public function show(Documento $documento, Request $request): DocumentoResource
     {
+        // 404 (não 403): um documento `privado` fora do alcance do
+        // utilizador não deve sequer confirmar que existe (auditoria de
+        // segurança, 2026-08-09 — C3).
+        if (! $this->canView($documento, $request->user())) {
+            throw new NotFoundHttpException();
+        }
+
         return new DocumentoResource($documento);
+    }
+
+    /**
+     * Restringe a listagem aos documentos que o utilizador pode ver:
+     * `publico` sempre visível; dono sempre vê o seu; `privado`/`departamento`
+     * só visíveis com uma concessão explícita em `document_permissions`
+     * (por papel ou por departamento do utilizador). Admin vê tudo.
+     * Mesma regra aplicada em `canView()` para o `show()` — mantidas
+     * sincronizadas de propósito (ver C3 na auditoria de segurança).
+     */
+    private function scopeToVisible(Builder $query, User $user): void
+    {
+        if ($user->isAdmin()) {
+            return;
+        }
+
+        $roles = array_map(fn ($r) => $r->value, $user->roleValues());
+        $departmentIds = $user->departments()->pluck('departments.id')->all();
+
+        $query->where(function (Builder $q) use ($user, $roles, $departmentIds) {
+            $q->where('visibility', 'publico')
+                ->orWhere('owner_id', $user->id);
+
+            if ($roles !== [] || $departmentIds !== []) {
+                $q->orWhereHas('permissions', fn (Builder $p) => $this->grantedTo($p, $roles, $departmentIds));
+            }
+        });
+    }
+
+    private function canView(Documento $documento, User $user): bool
+    {
+        if ($user->isAdmin() || $documento->visibility === 'publico' || $documento->owner_id === $user->id) {
+            return true;
+        }
+
+        $roles = array_map(fn ($r) => $r->value, $user->roleValues());
+        $departmentIds = $user->departments()->pluck('departments.id')->all();
+
+        if ($roles === [] && $departmentIds === []) {
+            return false;
+        }
+
+        return $documento->permissions()
+            ->where(fn (Builder $p) => $this->grantedTo($p, $roles, $departmentIds))
+            ->exists();
+    }
+
+    /** @param list<string> $roles @param list<string> $departmentIds */
+    private function grantedTo(Builder $query, array $roles, array $departmentIds): void
+    {
+        $query->when($roles !== [], fn (Builder $q) => $q->whereIn('role', $roles))
+            ->when($departmentIds !== [], fn (Builder $q) => $q->orWhereIn('department_id', $departmentIds));
     }
 
     public function store(DocumentoRequest $request): JsonResponse

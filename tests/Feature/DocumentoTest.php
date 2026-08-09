@@ -4,7 +4,9 @@ namespace Tests\Feature;
 
 use App\Enums\AppRole;
 use App\Models\DocCategory;
+use App\Models\Department;
 use App\Models\Documento;
+use App\Models\DocumentPermission;
 use App\Models\User;
 use App\Models\UserRole;
 use Database\Seeders\RolePermissionSeeder;
@@ -100,5 +102,77 @@ class DocumentoTest extends TestCase
 
         $this->actingAs($user)->deleteJson("/api/documentos/{$documento->id}")->assertNoContent();
         $this->assertDatabaseMissing('documentos', ['id' => $documento->id]);
+    }
+
+    public function test_documento_privado_nao_aparece_na_listagem_de_quem_nao_tem_acesso(): void
+    {
+        Documento::factory()->create(['title' => 'Privado Sem Acesso', 'visibility' => 'privado']);
+        $user = $this->comPapel(AppRole::DirectorLaboratorio);
+
+        $response = $this->actingAs($user)->getJson('/api/documentos');
+
+        $titles = collect($response->json('data'))->pluck('title');
+        $this->assertFalse($titles->contains('Privado Sem Acesso'));
+    }
+
+    public function test_documento_privado_devolve_404_a_quem_nao_tem_acesso(): void
+    {
+        // 404, nao 403: nao deve sequer confirmar que o documento existe.
+        $documento = Documento::factory()->create(['visibility' => 'privado']);
+        $user = $this->comPapel(AppRole::DirectorLaboratorio);
+
+        $this->actingAs($user)->getJson("/api/documentos/{$documento->id}")->assertNotFound();
+    }
+
+    public function test_dono_ve_sempre_o_seu_documento_privado(): void
+    {
+        $user = $this->comPapel(AppRole::DirectorLaboratorio);
+        $documento = Documento::factory()->create(['visibility' => 'privado', 'owner_id' => $user->id]);
+
+        $this->actingAs($user)->getJson("/api/documentos/{$documento->id}")->assertOk();
+    }
+
+    public function test_admin_ve_documentos_privados_de_outros(): void
+    {
+        $documento = Documento::factory()->create(['visibility' => 'privado']);
+        $admin = $this->comPapel(AppRole::Admin);
+
+        $this->actingAs($admin)->getJson("/api/documentos/{$documento->id}")->assertOk();
+    }
+
+    public function test_concessao_por_papel_da_acesso_a_documento_privado(): void
+    {
+        $documento = Documento::factory()->create(['visibility' => 'privado']);
+        DocumentPermission::query()->create([
+            'id' => (string) Str::uuid(),
+            'document_id' => $documento->id,
+            'role' => AppRole::DirectorLaboratorio->value,
+            'can_edit' => false,
+        ]);
+        $user = $this->comPapel(AppRole::DirectorLaboratorio);
+
+        $this->actingAs($user)->getJson("/api/documentos/{$documento->id}")->assertOk();
+    }
+
+    public function test_concessao_por_departamento_da_acesso_a_documento_de_departamento(): void
+    {
+        $department = Department::factory()->create();
+        $documento = Documento::factory()->create(['visibility' => 'departamento']);
+        DocumentPermission::query()->create([
+            'id' => (string) Str::uuid(),
+            'document_id' => $documento->id,
+            'department_id' => $department->id,
+            'can_edit' => false,
+        ]);
+        $user = $this->comPapel(AppRole::DirectorLaboratorio);
+        $user->departments()->attach($department->id);
+
+        $this->actingAs($user)->getJson("/api/documentos/{$documento->id}")->assertOk();
+
+        $outroDepartamento = Department::factory()->create();
+        $outroUser = $this->comPapel(AppRole::DirectorLaboratorio);
+        $outroUser->departments()->attach($outroDepartamento->id);
+
+        $this->actingAs($outroUser)->getJson("/api/documentos/{$documento->id}")->assertNotFound();
     }
 }
