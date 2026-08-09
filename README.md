@@ -31,6 +31,21 @@ Para o frontend (`../Front-end`) consumir esta API em vez do mock MSW: `VITE_API
 php artisan test
 ```
 
+## Deploy com Docker
+
+`docker-compose.yml` sobe a stack completa: `nginx` (porta 8000) + `app`/`queue` (PHP-FPM 8.2 Alpine) + `postgres` 15 + um serviço `migrate` one-shot que corre as migrations antes de `app`/`queue` arrancarem.
+
+```bash
+cp .env.example .env.docker   # editar: APP_KEY, DB_PASSWORD, FRONTEND_URL, SANCTUM_STATEFUL_DOMAINS
+php artisan key:generate --show   # copiar o valor para APP_KEY em .env.docker
+mv .env.docker .env               # docker compose lê .env na raiz do projecto para as variáveis ${...}
+docker compose up --build
+```
+
+`APP_KEY` e `DB_PASSWORD` são obrigatórios (o compose recusa arrancar sem eles — ver `:?` em `docker-compose.yml`). Sem seed automático: correr `docker compose exec app php artisan db:seed` manualmente se forem necessárias as 12 contas de demonstração.
+
+Este `.env` da raiz alimenta apenas o `docker-compose.yml` (interpolação `${VAR}`) — é distinto do `.env` que o Laravel lê dentro do container, que vem inteiramente das variáveis `environment:` do compose, não de um ficheiro copiado para a imagem.
+
 ## Contrato da API
 
 Fonte de verdade: `../Front-end/src/services/api/endpoints.ts`, `../Front-end/src/types/dto/*.ts`, `../Front-end/src/mocks/handlers/*.ts`. Este backend implementa esse contrato — em caso de dúvida sobre um campo exacto, o DTO correspondente é a referência definitiva.
