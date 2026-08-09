@@ -24,6 +24,7 @@ use App\Http\Controllers\Api\FormacaoController;
 use App\Http\Controllers\Api\HeroSlideController;
 use App\Http\Controllers\Api\InqueritoSatisfacaoController;
 use App\Http\Controllers\Api\InseminacaoController;
+use App\Http\Controllers\Api\InvestigacaoController;
 use App\Http\Controllers\Api\LaboratorioController;
 use App\Http\Controllers\Api\LancamentoController;
 use App\Http\Controllers\Api\LegislacaoController;
@@ -481,4 +482,24 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/inseminacao/registos', [InseminacaoController::class, 'storeRegisto'])->middleware('module:inseminacao,write');
     Route::put('/inseminacao/registos/{registo}', [InseminacaoController::class, 'updateRegisto'])->middleware('module:inseminacao,write');
     Route::delete('/inseminacao/registos/{registo}', [InseminacaoController::class, 'destroyRegisto'])->middleware('module:inseminacao,write');
+
+    // --- Onda 10 — Investigação --------------------------------------------------
+    // "BI" não tem endpoints próprios (mocks/handlers: agregação de leitura
+    // client-side sobre os módulos já migrados) — ver secção 15 da memória.
+    Route::get('/investigacao/stats', [InvestigacaoController::class, 'stats'])->middleware('module:investigacao');
+
+    Route::get('/investigacao/linhas', [InvestigacaoController::class, 'linesIndex'])->middleware('module:investigacao');
+    Route::post('/investigacao/linhas', [InvestigacaoController::class, 'linesStore'])->middleware('module:investigacao,write');
+    Route::put('/investigacao/linhas/{linha}', [InvestigacaoController::class, 'linesUpdate'])->middleware('module:investigacao,write');
+    Route::delete('/investigacao/linhas/{linha}', [InvestigacaoController::class, 'linesDestroy'])->middleware('module:investigacao,write');
+
+    Route::get('/investigacao/projectos', [InvestigacaoController::class, 'projectsIndex'])->middleware('module:investigacao');
+    Route::post('/investigacao/projectos', [InvestigacaoController::class, 'projectsStore'])->middleware('module:investigacao,write');
+    Route::put('/investigacao/projectos/{projecto}', [InvestigacaoController::class, 'projectsUpdate'])->middleware('module:investigacao,write');
+    Route::delete('/investigacao/projectos/{projecto}', [InvestigacaoController::class, 'projectsDestroy'])->middleware('module:investigacao,write');
+
+    Route::get('/investigacao/publicacoes', [InvestigacaoController::class, 'publicationsIndex'])->middleware('module:investigacao');
+    Route::post('/investigacao/publicacoes', [InvestigacaoController::class, 'publicationsStore'])->middleware('module:investigacao,write');
+    Route::put('/investigacao/publicacoes/{publicacao}', [InvestigacaoController::class, 'publicationsUpdate'])->middleware('module:investigacao,write');
+    Route::delete('/investigacao/publicacoes/{publicacao}', [InvestigacaoController::class, 'publicationsDestroy'])->middleware('module:investigacao,write');
 });
