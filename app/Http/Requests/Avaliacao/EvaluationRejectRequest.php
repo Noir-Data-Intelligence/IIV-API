@@ -11,11 +11,14 @@ class EvaluationRejectRequest extends FormRequest
         return true;
     }
 
-    /** @return array<string, mixed> */
+    /**
+     * `actorId` deixou de vir do payload — ver EvaluationTransitionRequest.
+     *
+     * @return array<string, mixed>
+     */
     public function rules(): array
     {
         return [
-            'actorId' => ['nullable', 'uuid'],
             'reason' => ['required', 'string'],
         ];
     }

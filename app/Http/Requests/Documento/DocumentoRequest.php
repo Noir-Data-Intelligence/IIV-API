@@ -19,7 +19,10 @@ class DocumentoRequest extends FormRequest
             'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
             'categoryId' => ['nullable', 'uuid', 'exists:doc_categories,id'],
-            'ownerId' => ['sometimes', 'uuid', 'exists:users,id'],
+            // `ownerId` deixou de ser aceite do payload — era forjável, um
+            // utilizador podia criar um documento em nome de outra pessoa
+            // (auditoria de segurança, 2026-08-09). O dono é sempre
+            // `$request->user()->id` no controller.
             'status' => [Rule::in(['rascunho', 'submetido', 'aprovado', 'rejeitado', 'arquivado'])],
             'visibility' => [Rule::in(['publico', 'departamento', 'privado'])],
             'expiryDate' => ['nullable', 'date'],

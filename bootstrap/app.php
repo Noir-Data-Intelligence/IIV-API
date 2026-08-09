@@ -6,7 +6,9 @@ use Illuminate\Auth\Middleware\Authenticate;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Middleware\TrustProxies;
 use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\Request as SymfonyRequest;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -17,6 +19,24 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->statefulApi();
+        // Atrás do Traefik (TLS termina lá, o container só vê HTTP simples
+        // do proxy) — sem isto, `Request::ip()` no trilho de auditoria
+        // (LogsAuditTrail) grava sempre o IP do Traefik, igual para todos
+        // os utilizadores, e o esquema fica sempre "http" mesmo em produção
+        // (auditoria de segurança, 2026-08-09). Confiar em '*' é aceitável
+        // aqui porque só o Traefik consegue falar directamente com este
+        // container (rede Docker interna, porta não publicada no host).
+        $middleware->trustProxies(at: '*', headers: SymfonyRequest::HEADER_X_FORWARDED_FOR
+            | SymfonyRequest::HEADER_X_FORWARDED_HOST
+            | SymfonyRequest::HEADER_X_FORWARDED_PORT
+            | SymfonyRequest::HEADER_X_FORWARDED_PROTO);
+        // Tecto global de rate limit em toda a API (limiter `api` por
+        // omissão, 60/min por utilizador autenticado ou por IP) — sem
+        // isto, `/login`/`/register` etc. não tinham NENHUM rate limit
+        // antes do `throttle:auth` explícito nessas rotas (ver routes/api.php),
+        // e listagens paginadas (per_page até 2000) ficavam abertas a
+        // table-scan repetido sem custo (auditoria de segurança, 2026-08-09).
+        $middleware->throttleApi();
 
         $middleware->alias([
             'module' => EnsureModulePermission::class,

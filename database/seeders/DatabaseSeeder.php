@@ -7,18 +7,25 @@ use Illuminate\Database\Seeder;
 class DatabaseSeeder extends Seeder
 {
     /**
-     * Onda 1 — Fundação, Onda 3 — Laboratório. Ordem importa: `UserSeeder`
-     * antes de `LaboratorioSeeder` porque a Bacteriologia (AB) resolve os
-     * seus 3 validadores nomeados por email de conta de demonstração;
+     * Dados de REFERÊNCIA (seguros para produção) — nunca contas de
+     * utilizador. `UserSeeder` foi deliberadamente retirado daqui depois de
+     * uma auditoria de segurança (red team, 2026-08-09) ter apontado que o
+     * `README.md` instruía `db:seed` também em produção, o que criaria as
+     * 12 contas de demonstração com passwords previsíveis (`<papel>123`)
+     * em qualquer deploy real. Correr `UserSeeder` continua seguro em
+     * dev/staging: `php artisan db:seed --class=UserSeeder`.
+     *
      * `LaboratorioSeeder` antes de `CriterioRejeicaoSeeder` porque os
      * critérios de Microbiologia Alimentar referenciam o laboratório AMA.
+     * `LaboratorioSeeder` resolve os validadores nomeados da Bacteriologia
+     * (AB) por email de conta de demonstração — degrada graciosamente para
+     * uma lista vazia se `UserSeeder` não tiver corrido (produção real).
      */
     public function run(): void
     {
         $this->call([
             RolePermissionSeeder::class,
             DepartmentSeeder::class,
-            UserSeeder::class,
             LaboratorioSeeder::class,
             CriterioRejeicaoSeeder::class,
         ]);

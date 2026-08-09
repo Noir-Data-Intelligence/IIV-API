@@ -22,7 +22,7 @@ class Missao extends Model
 
     protected $fillable = [
         'id', 'title', 'destination', 'purpose', 'start_date', 'end_date', 'status',
-        'budget', 'currency', 'notes', 'created_by', 'created_at',
+        'budget', 'currency', 'notes', 'created_by', 'approved_by', 'created_at',
     ];
 
     protected function casts(): array
@@ -38,6 +38,11 @@ class Missao extends Model
     public function criador(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function aprovador(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'approved_by');
     }
 
     public function participants(): HasMany

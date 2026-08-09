@@ -22,6 +22,7 @@ class MissaoResource extends JsonResource
             'currency' => $this->currency,
             'notes' => $this->notes,
             'createdBy' => $this->created_by,
+            'approvedBy' => $this->approved_by,
             'createdAt' => $this->created_at?->toISOString(),
         ];
     }

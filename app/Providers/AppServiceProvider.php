@@ -3,7 +3,10 @@
 namespace App\Providers;
 
 use Illuminate\Auth\Notifications\ResetPassword;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -21,6 +24,29 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Sem isto, /login|/register|/forgot-password|/reset-password não
+        // tinham NENHUM rate limit (auditoria de segurança, 2026-08-09) —
+        // força bruta e password spraying sem custo nenhum para o atacante.
+        // Par de limites: estreito por credencial (não deixa adivinhar a
+        // password de uma conta específica) + largo por IP (não bloqueia
+        // uma instituição inteira atrás de um único NAT).
+        RateLimiter::for('auth', function (Request $request) {
+            $key = mb_strtolower((string) $request->input('email', '')).'|'.$request->ip();
+
+            return [
+                Limit::perMinute(5)->by($key),
+                Limit::perMinute(20)->by($request->ip()),
+            ];
+        });
+
+        // Tecto global (`$middleware->throttleApi()` em bootstrap/app.php só
+        // escolhe o NOME do limiter — tem de ser definido aqui, senão toda a
+        // API rebenta com MissingRateLimiterException). Por utilizador
+        // autenticado quando possível, por IP para pedidos anónimos (rotas
+        // públicas de conteúdo).
+        RateLimiter::for('api', function (Request $request) {
+            return Limit::perMinute(120)->by($request->user()?->id ?: $request->ip());
+        });
         // O frontend le sempre `response.data` como o DTO em si (ver
         // services/api/client.ts) — nunca um envelope `{data: ...}`. Sem
         // isto, todo o JsonResource singular ficaria automaticamente

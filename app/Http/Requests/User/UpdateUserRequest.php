@@ -24,6 +24,9 @@ class UpdateUserRequest extends FormRequest
             'roles.*' => [Rule::in(AppRole::values())],
             'departmentIds' => ['sometimes', 'array'],
             'departmentIds.*' => ['uuid', 'exists:departments,id'],
+            // Aprovação de contas auto-registadas (`AuthController::register`
+            // cria-as sempre `is_active=false`) e desactivação administrativa.
+            'isActive' => ['sometimes', 'boolean'],
         ];
     }
 }

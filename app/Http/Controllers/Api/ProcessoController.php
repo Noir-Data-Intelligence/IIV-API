@@ -129,13 +129,15 @@ class ProcessoController extends Controller
         return ProcessEventResource::collection($processo->events);
     }
 
+    // O actor é SEMPRE `$request->user()->id` — nunca um `actorId` do
+    // payload (era forjável, ver ProcessTransitionRequest/ProcessEventRequest).
     public function storeEvent(ProcessEventRequest $request, Processo $processo): JsonResponse
     {
         $data = $request->validated();
 
         $event = $this->workflow->registarEvento(
             $processo,
-            $data['actorId'] ?? null,
+            $request->user()->id,
             $data['eventType'],
             $data['payload'] ?? null,
         );
@@ -146,7 +148,7 @@ class ProcessoController extends Controller
     public function advance(ProcessTransitionRequest $request, Processo $processo): ProcessoResource
     {
         $data = $request->validated();
-        $processo = $this->workflow->avancar($processo, $data['actorId'] ?? null, $data['notes'] ?? null);
+        $processo = $this->workflow->avancar($processo, $request->user()->id, $data['notes'] ?? null);
 
         return new ProcessoResource($processo);
     }
@@ -154,7 +156,7 @@ class ProcessoController extends Controller
     public function returnStep(ProcessTransitionRequest $request, Processo $processo): ProcessoResource
     {
         $data = $request->validated();
-        $processo = $this->workflow->devolver($processo, $data['actorId'] ?? null, $data['notes'] ?? null);
+        $processo = $this->workflow->devolver($processo, $request->user()->id, $data['notes'] ?? null);
 
         return new ProcessoResource($processo);
     }
@@ -162,7 +164,7 @@ class ProcessoController extends Controller
     public function cancel(ProcessTransitionRequest $request, Processo $processo): ProcessoResource
     {
         $data = $request->validated();
-        $processo = $this->workflow->cancelar($processo, $data['actorId'] ?? null, $data['notes'] ?? null);
+        $processo = $this->workflow->cancelar($processo, $request->user()->id, $data['notes'] ?? null);
 
         return new ProcessoResource($processo);
     }

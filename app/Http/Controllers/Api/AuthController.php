@@ -53,6 +53,16 @@ class AuthController extends Controller
             ]);
         }
 
+        // Conta auto-registada (`register()` abaixo) ainda não aprovada por
+        // um admin — nunca deixar autenticar, mesmo com a password certa.
+        if (! Auth::user()->is_active) {
+            Auth::guard('web')->logout();
+
+            throw ValidationException::withMessages([
+                'email' => ['Esta conta está pendente de aprovação por um administrador.'],
+            ]);
+        }
+
         $request->session()->regenerate();
 
         return response()->noContent();
@@ -67,14 +77,16 @@ class AuthController extends Controller
         return response()->noContent();
     }
 
+    /**
+     * Cria a conta mas NUNCA autentica — fica `is_active=false` até um
+     * admin a aprovar (`PUT /users/{id}`). Auditoria de segurança
+     * (2026-08-09): esta rota é pública; autenticar de imediato dava a
+     * qualquer anónimo na Internet acesso de leitura (papel
+     * `recepcionista`) a requisições/amostras, documentos e avaliações de
+     * desempenho, sem nenhuma aprovação.
+     */
     public function register(RegisterRequest $request): JsonResponse
     {
-        if (! $request->hasSession()) {
-            throw ValidationException::withMessages([
-                'email' => ['Não foi possível estabelecer sessão — confirme SANCTUM_STATEFUL_DOMAINS/FRONTEND_URL.'],
-            ]);
-        }
-
         $data = $request->validated();
 
         $user = User::query()->create([
@@ -82,6 +94,7 @@ class AuthController extends Controller
             'full_name' => $data['fullName'],
             'email' => $data['email'],
             'password' => Hash::make($data['password']),
+            'is_active' => false,
         ]);
 
         UserRole::query()->create([
@@ -90,12 +103,9 @@ class AuthController extends Controller
             'role' => AppRole::Recepcionista,
         ]);
 
-        Auth::login($user);
-        $request->session()->regenerate();
-
-        return (new UserResource($user->load('userRoles', 'departments')))
-            ->response()
-            ->setStatusCode(201);
+        return response()->json([
+            'message' => 'Conta criada. Fica pendente de aprovação por um administrador antes de poder entrar.',
+        ], 202);
     }
 
     public function forgotPassword(ForgotPasswordRequest $request): Response
@@ -127,9 +137,23 @@ class AuthController extends Controller
 
     public function changePassword(ChangePasswordRequest $request): Response
     {
+        $newPassword = $request->validated()['password'];
+
         $request->user()->forceFill([
-            'password' => Hash::make($request->validated()['password']),
+            'password' => Hash::make($newPassword),
         ])->save();
+
+        // Sem isto, uma sessão obtida por acesso momentâneo a um posto
+        // partilhado (cenário real num laboratório, ver RDA) continuava
+        // válida noutro dispositivo mesmo depois do titular mudar a
+        // password a suspeitar de algo (auditoria de segurança, 2026-08-09).
+        // A NOVA password (não a `currentPassword` já validada acima): o
+        // `save()` já actualizou o modelo em memória, `logoutOtherDevices()`
+        // re-verifica contra a password ACTUAL — que a esta altura já é a
+        // nova. Guard 'web' explícito pela mesma razão de `login()`/
+        // `logout()` acima (dentro de `auth:sanctum`, a fachada nua resolve
+        // o RequestGuard do Sanctum, que não tem este método).
+        Auth::guard('web')->logoutOtherDevices($newPassword);
 
         return response()->noContent();
     }

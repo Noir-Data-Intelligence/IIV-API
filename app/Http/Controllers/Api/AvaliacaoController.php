@@ -244,38 +244,32 @@ class AvaliacaoController extends Controller
         return EvaluationHistoryResource::collection($avaliacao->history);
     }
 
+    // O actor de cada transição é SEMPRE `$request->user()->id` — nunca um
+    // `actorId` do payload (era forjável, ver EvaluationTransitionRequest).
     public function submit(EvaluationTransitionRequest $request, Evaluation $avaliacao): EvaluationResource
     {
-        $data = $request->validated();
-
-        return new EvaluationResource($this->workflow->submeter($avaliacao, $data['actorId'] ?? null)->load('cycle'));
+        return new EvaluationResource($this->workflow->submeter($avaliacao, $request->user()->id)->load('cycle'));
     }
 
     public function approve(EvaluationTransitionRequest $request, Evaluation $avaliacao): EvaluationResource
     {
-        $data = $request->validated();
-
-        return new EvaluationResource($this->workflow->aprovar($avaliacao, $data['actorId'] ?? null)->load('cycle'));
+        return new EvaluationResource($this->workflow->aprovar($avaliacao, $request->user()->id)->load('cycle'));
     }
 
     public function reject(EvaluationRejectRequest $request, Evaluation $avaliacao): EvaluationResource
     {
         $data = $request->validated();
 
-        return new EvaluationResource($this->workflow->rejeitar($avaliacao, $data['actorId'] ?? null, $data['reason'])->load('cycle'));
+        return new EvaluationResource($this->workflow->rejeitar($avaliacao, $request->user()->id, $data['reason'])->load('cycle'));
     }
 
     public function validate(EvaluationTransitionRequest $request, Evaluation $avaliacao): EvaluationResource
     {
-        $data = $request->validated();
-
-        return new EvaluationResource($this->workflow->validar($avaliacao, $data['actorId'] ?? null)->load('cycle'));
+        return new EvaluationResource($this->workflow->validar($avaliacao, $request->user()->id)->load('cycle'));
     }
 
     public function reopen(EvaluationTransitionRequest $request, Evaluation $avaliacao): EvaluationResource
     {
-        $data = $request->validated();
-
-        return new EvaluationResource($this->workflow->reabrir($avaliacao, $data['actorId'] ?? null)->load('cycle'));
+        return new EvaluationResource($this->workflow->reabrir($avaliacao, $request->user()->id)->load('cycle'));
     }
 }

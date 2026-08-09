@@ -20,7 +20,9 @@ class DocVersionRequest extends FormRequest
             'fileSize' => ['nullable', 'integer', 'min:0'],
             'mimeType' => ['nullable', 'string'],
             'changeNotes' => ['nullable', 'string'],
-            'uploadedBy' => ['nullable', 'uuid', 'exists:users,id'],
+            // `uploadedBy` deixou de ser aceite do payload — era forjável
+            // (auditoria de segurança, 2026-08-09). Sempre
+            // `$request->user()->id` no controller.
         ];
     }
 }

@@ -31,15 +31,18 @@ class EnsureModulePermission
             abort(401);
         }
 
-        $role = $user->primaryRole();
+        $roles = $user->roleValues();
 
-        if (! $role) {
+        if (empty($roles)) {
             abort(403, 'Utilizador sem papel atribuido.');
         }
 
+        // União de TODOS os papéis do utilizador, não só o "papel principal"
+        // (ver PermissionMatrixService::canViewAny — corrige achado de
+        // auditoria de segurança, 2026-08-09).
         $allowed = $level === 'write'
-            ? $this->permissions->canWrite($role, $module)
-            : $this->permissions->canView($role, $module);
+            ? $this->permissions->canWriteAny($roles, $module)
+            : $this->permissions->canViewAny($roles, $module);
 
         if (! $allowed) {
             abort(403, "Sem permissao de {$level} para o modulo {$module}.");

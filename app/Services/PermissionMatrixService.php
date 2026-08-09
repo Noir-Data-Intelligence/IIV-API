@@ -42,6 +42,41 @@ class PermissionMatrixService
         return in_array($module, $this->forRole($role)['write'], true);
     }
 
+    /**
+     * Verifica a UNIÃO de todos os papéis do utilizador, não um só "papel
+     * principal" — um utilizador com dois papéis nunca deve ter MENOS
+     * acesso do que qualquer um dos dois lhe daria isoladamente. Corrige um
+     * achado de auditoria de segurança (2026-08-09): `EnsureModulePermission`
+     * decidia a partir de `User::primaryRole()` (o papel alfabeticamente
+     * primeiro), o que podia negar acesso que um dos outros papéis do
+     * utilizador concedia — inclusive apagar a contenção deliberada do
+     * papel `isv` sempre que a ordem alfabética lhe desse prioridade a ele.
+     *
+     * @param  list<AppRole>  $roles
+     */
+    public function canViewAny(array $roles, string $module): bool
+    {
+        foreach ($roles as $role) {
+            if ($this->canView($role, $module)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /** @param  list<AppRole>  $roles */
+    public function canWriteAny(array $roles, string $module): bool
+    {
+        foreach ($roles as $role) {
+            if ($this->canWrite($role, $module)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     /** @return array<string, array{view: list<string>, write: list<string>}> */
     private function matrix(): array
     {

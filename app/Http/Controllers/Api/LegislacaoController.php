@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Legislacao\LegislacaoRequest;
 use App\Http\Resources\LegislacaoResource;
 use App\Models\Legislacao;
+use App\Services\PermissionMatrixService;
 use App\Support\PaginatedResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -17,9 +18,17 @@ use Illuminate\Support\Str;
  * legislacao.ts no frontend): sem `page`/`per_page` -> array simples (site
  * publico); com `page`/`per_page` -> envelope Paginated<T> (admin via
  * <DataTable>). Publico (sem auth). POST/PUT/DELETE exigem auth+escrita.
+ *
+ * CORRECÇÃO (auditoria de segurança, 2026-08-09): mesmo padrão do
+ * `NoticiaController` — `published` só é honrado para quem tem o módulo
+ * `legislacao` (via `$request->user()`, resolvido da cookie de sessão
+ * mesmo sem `auth:sanctum` na rota); anónimos ou sem permissão só veem
+ * legislação publicada, independentemente do que enviarem.
  */
 class LegislacaoController extends Controller
 {
+    public function __construct(private readonly PermissionMatrixService $permissions) {}
+
     public function index(Request $request): JsonResponse|array
     {
         $query = Legislacao::query()->orderBy('num');
@@ -33,7 +42,13 @@ class LegislacaoController extends Controller
                     ->orWhere('descricao', 'like', "%{$search}%");
             });
         }
-        if ($request->has('published')) {
+
+        $canSeeUnpublished = ($user = $request->user())
+            && collect($user->roleValues())->contains(fn ($role) => $this->permissions->canView($role, 'legislacao'));
+
+        if (! $canSeeUnpublished) {
+            $query->where('published', true);
+        } elseif ($request->has('published')) {
             $query->where('published', $request->boolean('published'));
         }
 

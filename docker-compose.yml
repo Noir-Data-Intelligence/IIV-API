@@ -12,7 +12,15 @@ x-app-env: &app-env
   APP_ENV: production
   APP_KEY: "${APP_KEY:?defina APP_KEY em .env.docker, gerado com \"php artisan key:generate --show\"}"
   APP_DEBUG: "false"
-  APP_URL: ${APP_URL:-https://api.iiv.noirdataintelligence.com}
+  # Mesmo host do frontend, servido via PathPrefix no Traefik (ver labels do
+  # serviço `nginx` abaixo) — nunca um subdomínio `api.` próprio. Auditoria
+  # de segurança (2026-08-09): um `SESSION_DOMAIN` com wildcard
+  # (`.noirdataintelligence.com`) tornava a cookie de sessão acessível a
+  # QUALQUER subdomínio do domínio da agência (cookie tossing/CSRF token
+  # fixation a partir de um subdomínio comprometido de outro cliente).
+  # Mesma origem elimina o problema na raiz: sem wildcard, sem CORS
+  # cross-origin sequer a configurar.
+  APP_URL: ${APP_URL:-https://iiv.noirdataintelligence.com}
   APP_LOCALE: pt
   APP_FALLBACK_LOCALE: pt
   LOG_CHANNEL: stack
@@ -23,19 +31,17 @@ x-app-env: &app-env
   DB_DATABASE: ${DB_DATABASE:-sig_iiv}
   DB_USERNAME: ${DB_USERNAME:-sig_iiv}
   DB_PASSWORD: "${DB_PASSWORD:?defina DB_PASSWORD em .env.docker}"
-  # Domínio real do frontend dockerizado (ver Front-end/docker-compose.yml,
-  # label `traefik.http.routers.iiv.rule`). Sobrepor via .env.docker para
-  # testar localmente (ex.: localhost:8080).
   SANCTUM_STATEFUL_DOMAINS: ${SANCTUM_STATEFUL_DOMAINS:-iiv.noirdataintelligence.com}
   FRONTEND_URL: ${FRONTEND_URL:-https://iiv.noirdataintelligence.com}
   SESSION_DRIVER: database
   SESSION_LIFETIME: 120
-  # Sem isto, a cookie de sessão do backend (api.iiv.noirdataintelligence.com)
-  # nunca seria enviada de volta pelo browser em pedidos para o frontend
-  # (iiv.noirdataintelligence.com) — subdomínios distintos exigem uma cookie
-  # de domínio partilhado. Sobrepor para `null` em dev local (mesma origem
-  # via localhost não precisa disto).
-  SESSION_DOMAIN: ${SESSION_DOMAIN:-.noirdataintelligence.com}
+  # Sem valor -> âmbito da cookie é o host exacto do pedido (mesma origem
+  # do frontend, ver nota de APP_URL acima). Nunca um wildcard.
+  SESSION_DOMAIN: ${SESSION_DOMAIN:-null}
+  # Atrás de TLS real (Traefik) em produção; sobrepor para "false" só em
+  # dev local sobre HTTP simples (.env.docker), nunca em produção.
+  SESSION_SECURE_COOKIE: ${SESSION_SECURE_COOKIE:-true}
+  SESSION_SAME_SITE: ${SESSION_SAME_SITE:-strict}
   BROADCAST_CONNECTION: log
   FILESYSTEM_DISK: local
   QUEUE_CONNECTION: database
@@ -98,22 +104,33 @@ services:
   nginx:
     image: nginx:alpine
     restart: unless-stopped
-    ports:
-      - "${APP_PORT:-8000}:80"
+    # SEM publicação de porta no host: em produção, o único caminho de
+    # entrada é o Traefik (rede `proxy`, TLS terminado lá). Publicar
+    # ${APP_PORT:-8000} directamente no host era um bypass total do Traefik
+    # — HTTP simples, sem qualquer middleware/WAF/rate-limit do proxy
+    # (auditoria de segurança, 2026-08-09). Para testar localmente sem
+    # Traefik, usar um `docker-compose.override.yml` próprio (não
+    # versionado) a re-adicionar `ports:`.
     volumes:
       - ./public:/var/www/html/public:ro
       - ./docker/nginx.conf:/etc/nginx/conf.d/default.conf:ro
     depends_on:
       - app
     # `proxy` liga este serviço ao mesmo Traefik externo do frontend (ver
-    # Front-end/docker-compose.yml) — subdomínio próprio, mesmo padrão.
-    # `default` mantém-se para falar com `app`/`postgres`/etc.
+    # Front-end/docker-compose.yml). `default` mantém-se para falar com
+    # `app`/`postgres`/etc.
     networks:
       - default
       - proxy
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.sig-iiv-api.rule=Host(`api.iiv.noirdataintelligence.com`)"
+      # MESMO host do frontend (Front-end/docker-compose.yml, router `iiv`)
+      # — só `/api` e `/sanctum` (rota de CSRF cookie do Sanctum, fora do
+      # prefixo /api) vêm parar aqui. Prioridade explícita mais alta do que
+      # o router `iiv` (Host simples) para o Traefik nunca hesitar entre
+      # os dois quando ambos correspondem.
+      - "traefik.http.routers.sig-iiv-api.rule=Host(`iiv.noirdataintelligence.com`) && (PathPrefix(`/api`) || PathPrefix(`/sanctum`))"
+      - "traefik.http.routers.sig-iiv-api.priority=100"
       - "traefik.http.routers.sig-iiv-api.entrypoints=websecure"
       - "traefik.http.routers.sig-iiv-api.tls=true"
       - "traefik.http.routers.sig-iiv-api.tls.certresolver=<CERTRESOLVER>"

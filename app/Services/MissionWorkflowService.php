@@ -21,9 +21,14 @@ class MissionWorkflowService
         return $this->transitar($missao, 'planeada', 'submetida');
     }
 
-    public function aprovar(Missao $missao): Missao
+    /**
+     * Grava sempre quem aprovou — antes disto a missão passava a "aprovada"
+     * sem nenhuma atribuição, tornando a decisão impossível de auditar
+     * depois (auditoria de segurança, 2026-08-09).
+     */
+    public function aprovar(Missao $missao, string $approverId): Missao
     {
-        return $this->transitar($missao, 'submetida', 'aprovada');
+        return $this->transitar($missao, 'submetida', 'aprovada', ['approved_by' => $approverId]);
     }
 
     public function rejeitar(Missao $missao): Missao
@@ -31,7 +36,8 @@ class MissionWorkflowService
         return $this->transitar($missao, 'submetida', 'planeada');
     }
 
-    private function transitar(Missao $missao, string $de, string $para): Missao
+    /** @param  array<string, mixed>  $patch */
+    private function transitar(Missao $missao, string $de, string $para, array $patch = []): Missao
     {
         if ($missao->status !== $de) {
             throw ValidationException::withMessages([
@@ -39,7 +45,7 @@ class MissionWorkflowService
             ])->status(409);
         }
 
-        $missao->update(['status' => $para]);
+        $missao->update(['status' => $para, ...$patch]);
 
         return $missao->fresh();
     }

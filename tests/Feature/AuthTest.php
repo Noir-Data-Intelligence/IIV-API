@@ -110,8 +110,12 @@ class AuthTest extends TestCase
             ->assertJsonPath('roles', ['tecnico']);
     }
 
-    public function test_registo_cria_conta_com_papel_recepcionista_por_omissao(): void
+    public function test_registo_cria_conta_pendente_com_papel_recepcionista_sem_autenticar(): void
     {
+        // Regressão crítica (auditoria de segurança, 2026-08-09): esta rota
+        // é pública — autenticar de imediato dava a qualquer anónimo na
+        // Internet acesso de leitura (papel recepcionista) a requisições,
+        // documentos e avaliações de desempenho, sem nenhuma aprovação.
         $response = $this->postJson('/api/register', [
             'fullName' => 'Novo Utilizador',
             'email' => 'novo@iiv.demo',
@@ -119,8 +123,26 @@ class AuthTest extends TestCase
             'password_confirmation' => 'password123',
         ]);
 
-        $response->assertCreated()->assertJsonPath('roles', ['recepcionista']);
-        $this->assertDatabaseHas('users', ['email' => 'novo@iiv.demo']);
+        $response->assertStatus(202);
+        $this->assertGuest();
+        $this->assertDatabaseHas('users', ['email' => 'novo@iiv.demo', 'is_active' => false]);
+
+        $user = User::query()->where('email', 'novo@iiv.demo')->first();
+        $this->assertSame(['recepcionista'], array_map(fn ($r) => $r->value, $user->roleValues()));
+    }
+
+    public function test_login_com_conta_auto_registada_pendente_devolve_422(): void
+    {
+        $this->postJson('/api/register', [
+            'fullName' => 'Novo Utilizador',
+            'email' => 'pendente@iiv.demo',
+            'password' => 'password123',
+            'password_confirmation' => 'password123',
+        ]);
+
+        $this->postJson('/api/login', ['email' => 'pendente@iiv.demo', 'password' => 'password123'])
+            ->assertStatus(422);
+        $this->assertGuest();
     }
 
     public function test_registo_com_email_duplicado_devolve_422(): void
@@ -184,10 +206,25 @@ class AuthTest extends TestCase
         $user = $this->makeUser('senha-actual');
 
         $this->actingAs($user)
-            ->patchJson('/api/user/password', ['password' => 'senha-seguinte123'])
+            ->patchJson('/api/user/password', ['currentPassword' => 'senha-actual', 'password' => 'senha-seguinte123'])
             ->assertNoContent();
 
         $this->assertTrue(Hash::check('senha-seguinte123', $user->fresh()->password));
+    }
+
+    public function test_change_password_sem_a_password_actual_correcta_devolve_422(): void
+    {
+        // Regressão: sem esta validação, uma sessão obtida por acesso
+        // momentâneo convertia-se em posse permanente da conta com um único
+        // pedido, sem provar que quem o fez é o titular (auditoria de
+        // segurança, 2026-08-09).
+        $user = $this->makeUser('senha-actual');
+
+        $this->actingAs($user)
+            ->patchJson('/api/user/password', ['currentPassword' => 'password-errada', 'password' => 'senha-seguinte123'])
+            ->assertStatus(422);
+
+        $this->assertTrue(Hash::check('senha-actual', $user->fresh()->password));
     }
 
     public function test_logout_termina_a_sessao(): void

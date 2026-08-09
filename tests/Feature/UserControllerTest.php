@@ -104,4 +104,53 @@ class UserControllerTest extends TestCase
     {
         $this->getJson('/api/users')->assertUnauthorized();
     }
+
+    public function test_admin_nao_pode_eliminar_a_propria_conta(): void
+    {
+        // Regressão (auditoria de segurança, 2026-08-09): sem esta guarda,
+        // era possível apagar a própria conta via DELETE /users/{self} —
+        // risco de lockout total e de anonimizar o próprio autor no trilho
+        // de auditoria (actor_id fica NULL).
+        $admin = $this->userWithRole(AppRole::Admin);
+
+        $this->actingAs($admin)->deleteJson("/api/users/{$admin->id}")->assertStatus(422);
+        $this->assertDatabaseHas('users', ['id' => $admin->id]);
+    }
+
+    public function test_nao_pode_eliminar_o_ultimo_admin_activo(): void
+    {
+        $admin1 = $this->userWithRole(AppRole::Admin);
+        $admin2 = $this->userWithRole(AppRole::Admin);
+
+        // Com dois admins, eliminar um é permitido.
+        $this->actingAs($admin1)->deleteJson("/api/users/{$admin2->id}")->assertNoContent();
+
+        // Um terceiro utilizador (sem papel admin) não pode ser afectado
+        // por esta guarda — só entra em jogo quando o ALVO é o último admin.
+        $outro = User::factory()->create();
+        $this->actingAs($admin1)->deleteJson("/api/users/{$outro->id}")->assertNoContent();
+    }
+
+    public function test_nao_pode_desactivar_nem_despromover_o_ultimo_admin_activo(): void
+    {
+        $unicoAdmin = $this->userWithRole(AppRole::Admin);
+        $outroAdmin = $this->userWithRole(AppRole::Admin);
+
+        // Com dois admins activos, despromover um é permitido.
+        $this->actingAs($unicoAdmin)
+            ->putJson("/api/users/{$outroAdmin->id}", ['roles' => ['tecnico']])
+            ->assertOk();
+
+        // Agora só resta um admin activo ($unicoAdmin) — nem desactivá-lo
+        // nem tirar-lhe o papel admin pode ser aceite.
+        $this->actingAs($unicoAdmin)
+            ->putJson("/api/users/{$unicoAdmin->id}", ['isActive' => false])
+            ->assertStatus(422);
+
+        $this->actingAs($unicoAdmin)
+            ->putJson("/api/users/{$unicoAdmin->id}", ['roles' => ['tecnico']])
+            ->assertStatus(422);
+
+        $this->assertDatabaseHas('users', ['id' => $unicoAdmin->id, 'is_active' => true]);
+    }
 }

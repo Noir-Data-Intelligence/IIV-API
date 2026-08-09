@@ -21,7 +21,12 @@ class MissaoRequest extends FormRequest
             'purpose' => ['nullable', 'string'],
             'startDate' => ['required', 'date'],
             'endDate' => ['required', 'date', 'after_or_equal:startDate'],
-            'status' => ['sometimes', Rule::in(['planeada', 'submetida', 'aprovada', 'em_curso', 'concluida', 'cancelada'])],
+            // Só os 3 estados sem endpoint de transição dedicado (ver
+            // MissionWorkflowService) — "planeada"/"submetida"/"aprovada"
+            // só são alcançáveis via submit()/approve()/reject(). Sem esta
+            // restrição, o PUT genérico saltava a aprovação por completo
+            // (auditoria de segurança, 2026-08-09).
+            'status' => ['sometimes', Rule::in(['em_curso', 'concluida', 'cancelada'])],
             'budget' => ['sometimes', 'numeric', 'min:0'],
             'currency' => ['sometimes', 'string', 'max:10'],
             'notes' => ['nullable', 'string'],

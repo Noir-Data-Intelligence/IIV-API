@@ -21,6 +21,7 @@ class UserResource extends JsonResource
             'phone' => $this->phone,
             'roles' => array_map(fn ($role) => $role->value, $this->roleValues()),
             'departmentIds' => $this->departments->pluck('id')->all(),
+            'isActive' => (bool) $this->is_active,
             'createdAt' => $this->created_at?->toISOString(),
         ];
     }

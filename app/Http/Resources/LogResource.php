@@ -27,7 +27,10 @@ class LogResource extends JsonResource
             ], fn ($v) => $v !== null) ?: null,
             'createdAt' => $this->created_at?->toISOString(),
             'userId' => $this->actor_id,
-            'userName' => $this->actor?->full_name,
+            // Cópia desnormalizada primeiro — sobrevive à eliminação da
+            // conta (`actor_id` é nullOnDelete). Cai para a relação só em
+            // registos antigos, anteriores a esta coluna.
+            'userName' => $this->actor_name ?? $this->actor?->full_name,
             'ipAddress' => $this->ip_address,
         ];
     }

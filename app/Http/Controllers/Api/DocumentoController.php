@@ -62,7 +62,7 @@ class DocumentoController extends Controller
             'title' => $data['title'],
             'description' => $data['description'] ?? null,
             'category_id' => $data['categoryId'] ?? null,
-            'owner_id' => $data['ownerId'] ?? $request->user()->id,
+            'owner_id' => $request->user()->id,
             'status' => $data['status'] ?? 'rascunho',
             'visibility' => $data['visibility'] ?? 'publico',
             'expiry_date' => $data['expiryDate'] ?? null,
@@ -118,7 +118,7 @@ class DocumentoController extends Controller
             'file_size' => $data['fileSize'] ?? null,
             'mime_type' => $data['mimeType'] ?? null,
             'change_notes' => $data['changeNotes'] ?? "Versão {$nextNumber}",
-            'uploaded_by' => $data['uploadedBy'] ?? $documento->owner_id,
+            'uploaded_by' => $request->user()->id,
             'created_at' => now(),
         ]);
 

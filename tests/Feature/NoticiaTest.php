@@ -40,14 +40,36 @@ class NoticiaTest extends TestCase
             ->assertJsonStructure(['data' => [['id', 'slug', 'titulo', 'image_path', 'published_at', 'created_at']]]);
     }
 
-    public function test_index_so_filtra_por_published_se_o_cliente_o_enviar(): void
+    public function test_visitante_anonimo_nunca_ve_rascunhos_nao_publicados(): void
     {
+        // Regressão (auditoria de segurança, 2026-08-09): o filtro
+        // `published` era só honrado se o cliente o enviasse, nunca
+        // imposto — um visitante anónimo podia omiti-lo e ler rascunhos
+        // (`GET /noticias?per_page=2000`).
         Noticia::factory()->count(2)->create(['published' => true]);
         Noticia::factory()->unpublished()->count(3)->create();
 
-        $this->getJson('/api/noticias')->assertJsonPath('meta.total', 5);
-        $this->getJson('/api/noticias?published=true')->assertJsonPath('meta.total', 2);
-        $this->getJson('/api/noticias?published=false')->assertJsonPath('meta.total', 3);
+        $this->getJson('/api/noticias')->assertJsonPath('meta.total', 2);
+        $this->getJson('/api/noticias?published=false')->assertJsonPath('meta.total', 2);
+    }
+
+    public function test_utilizador_com_modulo_noticias_ve_rascunhos_nao_publicados(): void
+    {
+        Noticia::factory()->count(2)->create(['published' => true]);
+        Noticia::factory()->unpublished()->count(3)->create();
+        $admin = $this->userWithRole(AppRole::Admin);
+
+        $this->actingAs($admin)->getJson('/api/noticias')->assertJsonPath('meta.total', 5);
+        $this->actingAs($admin)->getJson('/api/noticias?published=false')->assertJsonPath('meta.total', 3);
+    }
+
+    public function test_utilizador_sem_modulo_noticias_nao_ve_rascunhos(): void
+    {
+        Noticia::factory()->unpublished()->count(3)->create();
+        // "tecnico" nao tem "noticias" na matriz seedada.
+        $tecnico = $this->userWithRole(AppRole::Tecnico);
+
+        $this->actingAs($tecnico)->getJson('/api/noticias')->assertJsonPath('meta.total', 0);
     }
 
     public function test_show_encontra_por_id_ou_por_slug(): void

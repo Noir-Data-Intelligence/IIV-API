@@ -63,10 +63,12 @@ use Illuminate\Support\Facades\Route;
 */
 
 // --- Auth (sem auth:sanctum, ver secção 2.2 da memória) ---------------------
-Route::post('/login', [AuthController::class, 'login']);
-Route::post('/register', [AuthController::class, 'register']);
-Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
-Route::post('/reset-password', [AuthController::class, 'resetPassword']);
+// `throttle:auth` (ver AppServiceProvider) — sem isto nenhuma destas rotas
+// tinha rate limit nenhum (auditoria de segurança, 2026-08-09).
+Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:auth');
+Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:auth');
+Route::post('/forgot-password', [AuthController::class, 'forgotPassword'])->middleware('throttle:auth');
+Route::post('/reset-password', [AuthController::class, 'resetPassword'])->middleware('throttle:auth');
 
 // --- Rotas públicas de conteúdo (Onda 2) — sem auth:sanctum ------------------
 // GET honra o filtro `published` só se o cliente o enviar, nunca o impõe
@@ -158,6 +160,12 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // --- Historico de alertas (modulo "historico-alertas") -----------------
     Route::get('/dashboard-alert-history', [DashboardAlertHistoryController::class, 'index'])->middleware('module:historico-alertas');
+    // SEM gate de módulo, de propósito: qualquer utilizador autenticado pode
+    // reportar/assinalar uma anomalia (fica sempre actionStatus=pendente);
+    // só quem tem `historico-alertas,write` pode depois atribuir/resolver
+    // via `update` — ver DashboardAlertHistoryTest e o comentário lá.
+    // (Uma auditoria de segurança, 2026-08-09, sinalizou isto por engano
+    // como gap — é desenho intencional, confirmado pelos testes existentes.)
     Route::post('/dashboard-alert-history', [DashboardAlertHistoryController::class, 'store']);
     Route::put('/dashboard-alert-history/{dashboardAlertHistory}', [DashboardAlertHistoryController::class, 'update'])->middleware('module:historico-alertas,write');
     Route::delete('/dashboard-alert-history', [DashboardAlertHistoryController::class, 'clear'])->middleware('module:historico-alertas,write');

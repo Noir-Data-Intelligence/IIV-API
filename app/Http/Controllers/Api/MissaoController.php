@@ -119,7 +119,7 @@ class MissaoController extends Controller
 
     public function approve(MissionTransitionRequest $request, Missao $missao): MissaoResource
     {
-        return new MissaoResource($this->workflow->aprovar($missao));
+        return new MissaoResource($this->workflow->aprovar($missao, $request->user()->id));
     }
 
     public function reject(MissionTransitionRequest $request, Missao $missao): MissaoResource

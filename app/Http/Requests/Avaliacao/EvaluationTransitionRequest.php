@@ -11,11 +11,16 @@ class EvaluationTransitionRequest extends FormRequest
         return true;
     }
 
-    /** @return array<string, mixed> */
+    /**
+     * Sem regras: `actorId` deixou de vir do payload (era forjável — um
+     * utilizador podia atribuir a aprovação/validação a outra pessoa, ver
+     * auditoria de segurança de 2026-08-09). O actor é sempre
+     * `$request->user()->id` no controller.
+     *
+     * @return array<string, mixed>
+     */
     public function rules(): array
     {
-        return [
-            'actorId' => ['nullable', 'uuid'],
-        ];
+        return [];
     }
 }
