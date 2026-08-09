@@ -8,10 +8,11 @@ return new class extends Migration
 {
     public function up(): void
     {
-        // FK auto-referente separada da criação da tabela: o Postgres exige
-        // que a PRIMARY KEY de `departments` já esteja totalmente
-        // estabelecida antes de aceitar uma FK que aponta para ela própria
-        // (SQLite é permissivo e mascarava isto) — ver `add_parent_foreign_to_departments_table`.
+        // FK auto-referente separada da criação da tabela (`Schema::table()`
+        // abaixo, não dentro do `Schema::create()`): o Postgres exige que a
+        // PRIMARY KEY de `departments` já esteja totalmente estabelecida
+        // antes de aceitar uma FK que aponta para ela própria — SQLite é
+        // permissivo e mascarava isto.
         Schema::create('departments', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->string('name');

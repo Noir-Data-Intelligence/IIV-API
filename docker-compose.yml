@@ -1,19 +1,28 @@
+# NOTA DE SEGURANÇA: `docker compose` lê por omissão um ficheiro chamado
+# `.env` na raiz do projecto para interpolar ${VAR} — o MESMO NOME que o
+# Laravel usa para o `.env` de desenvolvimento local (APP_DEBUG=true,
+# APP_ENV=local). Para nunca misturar os dois, usar sempre
+# `docker compose --env-file .env.docker ...` (nunca o `.env` de dev) — ver
+# README.md secção "Deploy com Docker". Como defesa adicional, APP_ENV/
+# APP_DEBUG/LOG_LEVEL ficam FIXOS abaixo (não interpoláveis) — mesmo que o
+# `.env` errado seja lido por engano, um container de produção nunca arranca
+# em modo debug.
 x-app-env: &app-env
   APP_NAME: ${APP_NAME:-SIG-IIV}
-  APP_ENV: ${APP_ENV:-production}
-  APP_KEY: "${APP_KEY:?defina APP_KEY em .env, gerado com \"php artisan key:generate --show\"}"
-  APP_DEBUG: ${APP_DEBUG:-false}
+  APP_ENV: production
+  APP_KEY: "${APP_KEY:?defina APP_KEY em .env.docker, gerado com \"php artisan key:generate --show\"}"
+  APP_DEBUG: "false"
   APP_URL: ${APP_URL:-http://localhost:8000}
   APP_LOCALE: pt
   APP_FALLBACK_LOCALE: pt
   LOG_CHANNEL: stack
-  LOG_LEVEL: ${LOG_LEVEL:-info}
+  LOG_LEVEL: info
   DB_CONNECTION: pgsql
   DB_HOST: postgres
   DB_PORT: 5432
   DB_DATABASE: ${DB_DATABASE:-sig_iiv}
   DB_USERNAME: ${DB_USERNAME:-sig_iiv}
-  DB_PASSWORD: "${DB_PASSWORD:?defina DB_PASSWORD em .env}"
+  DB_PASSWORD: "${DB_PASSWORD:?defina DB_PASSWORD em .env.docker}"
   SANCTUM_STATEFUL_DOMAINS: ${SANCTUM_STATEFUL_DOMAINS:-localhost:8080}
   FRONTEND_URL: ${FRONTEND_URL:-http://localhost:8080}
   SESSION_DRIVER: database
@@ -34,7 +43,7 @@ services:
     environment:
       POSTGRES_DB: ${DB_DATABASE:-sig_iiv}
       POSTGRES_USER: ${DB_USERNAME:-sig_iiv}
-      POSTGRES_PASSWORD: "${DB_PASSWORD:?defina DB_PASSWORD em .env}"
+      POSTGRES_PASSWORD: "${DB_PASSWORD:?defina DB_PASSWORD em .env.docker}"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:

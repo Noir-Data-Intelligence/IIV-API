@@ -25,15 +25,26 @@ use Illuminate\Validation\ValidationException;
  * Contrato de autenticacao — ver SIG-IIV-MEMORIA-PROJETO.md seccao 15 e
  * PLANO-BACKEND-LARAVEL.txt seccao 2.2. Sanctum SPA cookie-based: as rotas
  * de login/register/logout NAO devolvem token nenhum, o cookie de sessao
- * viaja sozinho (`withCredentials: true` no frontend). O frontend actual
- * ainda espera um `{ token, user }` no corpo do login/registo (aproximacao
- * do MSW, ver auth.ts) — o ajuste do lado do frontend fica para a Onda 11
- * (cutover), documentado e intencional, nao um esquecimento.
+ * viaja sozinho (`withCredentials: true` no frontend). O frontend real
+ * (`Front-end/src/services/api/auth.ts`) já fala este contrato — chama
+ * `GET /sanctum/csrf-cookie` antes do login e lê o utilizador via
+ * `GET /user` depois, exactamente como aqui.
  */
 class AuthController extends Controller
 {
     public function login(LoginRequest $request): Response
     {
+        // Sem sessão disponível, o pedido não foi reconhecido como "stateful"
+        // por `EnsureFrontendRequestsAreStateful` (Origin/Referer fora de
+        // `SANCTUM_STATEFUL_DOMAINS`, ou cliente que não envia nenhum dos
+        // dois) — sem esta guarda, `$request->session()` abaixo rebenta com
+        // RuntimeException (500) em vez de um erro diagnosticável.
+        if (! $request->hasSession()) {
+            throw ValidationException::withMessages([
+                'email' => ['Não foi possível estabelecer sessão — confirme SANCTUM_STATEFUL_DOMAINS/FRONTEND_URL.'],
+            ]);
+        }
+
         $credentials = $request->validated();
 
         if (! Auth::attempt($credentials)) {
@@ -58,6 +69,12 @@ class AuthController extends Controller
 
     public function register(RegisterRequest $request): JsonResponse
     {
+        if (! $request->hasSession()) {
+            throw ValidationException::withMessages([
+                'email' => ['Não foi possível estabelecer sessão — confirme SANCTUM_STATEFUL_DOMAINS/FRONTEND_URL.'],
+            ]);
+        }
+
         $data = $request->validated();
 
         $user = User::query()->create([

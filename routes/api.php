@@ -28,12 +28,14 @@ use App\Http\Controllers\Api\InvestigacaoController;
 use App\Http\Controllers\Api\LaboratorioController;
 use App\Http\Controllers\Api\LancamentoController;
 use App\Http\Controllers\Api\LegislacaoController;
+use App\Http\Controllers\Api\LogController;
 use App\Http\Controllers\Api\LoteController;
 use App\Http\Controllers\Api\MissaoController;
 use App\Http\Controllers\Api\NaoConformidadeController;
 use App\Http\Controllers\Api\NoticiaController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\ObservatorioController;
+use App\Http\Controllers\Api\PerfilController;
 use App\Http\Controllers\Api\OrcamentoController;
 use App\Http\Controllers\Api\PatrimonioCentralController;
 use App\Http\Controllers\Api\PatrimonioEstacaoController;
@@ -48,6 +50,7 @@ use App\Http\Controllers\Api\RequisicaoController;
 use App\Http\Controllers\Api\RhLaboratorioController;
 use App\Http\Controllers\Api\RhTransversalController;
 use App\Http\Controllers\Api\StockController;
+use App\Http\Controllers\Api\UserController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -85,6 +88,17 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::patch('/user/password', [AuthController::class, 'changePassword']);
 
     Route::post('/chat-assistant', [ChatAssistantController::class, 'stream']);
+
+    // "O meu perfil" — sem gate de módulo, qualquer utilizador autenticado
+    // edita os seus próprios dados (mesmo padrão de /user/password acima).
+    Route::get('/perfil/me', [PerfilController::class, 'show']);
+    Route::put('/perfil/me', [PerfilController::class, 'update']);
+
+    Route::get('/users', [UserController::class, 'index'])->middleware('module:utilizadores');
+    Route::put('/users/{user}', [UserController::class, 'update'])->middleware('module:utilizadores,write');
+    Route::delete('/users/{user}', [UserController::class, 'destroy'])->middleware('module:utilizadores,write');
+
+    Route::get('/logs', [LogController::class, 'index'])->middleware('module:logs');
 
     Route::apiResource('departamentos', DepartmentController::class)
         ->middleware(['module:departamentos'])

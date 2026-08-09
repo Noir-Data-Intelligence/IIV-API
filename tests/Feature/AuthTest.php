@@ -63,6 +63,25 @@ class AuthTest extends TestCase
         $this->assertAuthenticated();
     }
 
+    public function test_login_sem_referer_origin_devolve_422_em_vez_de_rebentar(): void
+    {
+        // Regressão: sem Referer/Origin a bater com SANCTUM_STATEFUL_DOMAINS
+        // (cliente mal configurado, health-checker, proxy que remove o
+        // header), `EnsureFrontendRequestsAreStateful` não arranca a sessão e
+        // `$request->session()` rebentava com RuntimeException (500) em vez
+        // de um erro diagnosticável. Este teste ignora deliberadamente o
+        // `withHeader('Referer', ...)` do setUp() para reproduzir o caso.
+        $this->makeUser('senha-correcta');
+
+        $response = $this->withHeaders(['Referer' => ''])->postJson('/api/login', [
+            'email' => 'teste@iiv.demo',
+            'password' => 'senha-correcta',
+        ]);
+
+        $response->assertStatus(422);
+        $this->assertGuest();
+    }
+
     public function test_login_com_credenciais_invalidas_devolve_422(): void
     {
         $this->makeUser('senha-correcta');

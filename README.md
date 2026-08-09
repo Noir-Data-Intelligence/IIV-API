@@ -36,15 +36,16 @@ php artisan test
 `docker-compose.yml` sobe a stack completa: `nginx` (porta 8000) + `app`/`queue` (PHP-FPM 8.2 Alpine) + `postgres` 15 + um serviço `migrate` one-shot que corre as migrations antes de `app`/`queue` arrancarem.
 
 ```bash
-cp .env.example .env.docker   # editar: APP_KEY, DB_PASSWORD, FRONTEND_URL, SANCTUM_STATEFUL_DOMAINS
-php artisan key:generate --show   # copiar o valor para APP_KEY em .env.docker
-mv .env.docker .env               # docker compose lê .env na raiz do projecto para as variáveis ${...}
-docker compose up --build
+touch .env.docker   # editar: APP_KEY, DB_PASSWORD, FRONTEND_URL, SANCTUM_STATEFUL_DOMAINS (ver variáveis em docker-compose.yml)
+php artisan key:generate --show --no-ansi   # copiar o valor para APP_KEY em .env.docker
+docker compose --env-file .env.docker up --build
 ```
 
-`APP_KEY` e `DB_PASSWORD` são obrigatórios (o compose recusa arrancar sem eles — ver `:?` em `docker-compose.yml`). Sem seed automático: correr `docker compose exec app php artisan db:seed` manualmente se forem necessárias as 12 contas de demonstração.
+**Nunca copiar/renomear isto para `.env`** — esse nome colide com o `.env` de desenvolvimento local do Laravel (`APP_DEBUG=true`, `APP_ENV=local`); usar sempre a flag `--env-file .env.docker` explícita em todos os comandos `docker compose` (`up`, `down`, `ps`, `exec`, ...). `APP_ENV`/`APP_DEBUG`/`LOG_LEVEL` estão também fixos em produção directamente no `docker-compose.yml`, como segunda linha de defesa.
 
-Este `.env` da raiz alimenta apenas o `docker-compose.yml` (interpolação `${VAR}`) — é distinto do `.env` que o Laravel lê dentro do container, que vem inteiramente das variáveis `environment:` do compose, não de um ficheiro copiado para a imagem.
+`APP_KEY` e `DB_PASSWORD` são obrigatórios (o compose recusa arrancar sem eles — ver `:?` em `docker-compose.yml`). Sem seed automático: correr `docker compose --env-file .env.docker exec app php artisan db:seed --force` manualmente (necessário para a matriz RBAC funcionar — sem seed, todos os papéis não-admin ficam sem nenhuma permissão) se forem necessárias também as 12 contas de demonstração.
+
+`.env.docker` alimenta apenas a interpolação `${VAR}` do `docker-compose.yml` — é distinto do `.env` que o Laravel lê dentro do container, que vem inteiramente das variáveis `environment:` do compose, não de um ficheiro copiado para a imagem.
 
 ## Contrato da API
 
@@ -52,4 +53,4 @@ Fonte de verdade: `../Front-end/src/services/api/endpoints.ts`, `../Front-end/sr
 
 ## Fases de construção
 
-Ver `../SIG-IIV-MEMORIA-PROJETO.md` secção 15 para a lista completa das Ondas (Fundação → Laboratório → Produção → Qualidade → Gestão → Financeiro/Património → Pessoas/Missões → Recursos/Produção → Investigação/BI → Observatório Veterinário Nacional → Cutover). Estado actual: Onda 1 (Fundação) concluída.
+Ver `../SIG-IIV-MEMORIA-PROJETO.md` secção 15 para a lista completa das Ondas (Fundação → Laboratório → Produção → Qualidade → Gestão → Financeiro/Património → Pessoas/Missões → Recursos/Produção → Investigação/BI → Observatório Veterinário Nacional → Cutover). Estado actual: Ondas 1-11 concluídas, incluindo o frontend do Observatório e a ligação a este backend real; dockerização de produção completa. Gaps conhecidos: módulo Insumos ainda não implementado no backend (rota `/insumos` inexistente).
