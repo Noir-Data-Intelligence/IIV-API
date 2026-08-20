@@ -20,6 +20,12 @@ class Documento extends Model
         'visibility', 'expiry_date', 'tags', 'current_version_id',
     ];
 
+    /** `tags` é `sometimes` no FormRequest — valor por omissão fica aqui em vez
+     *  de na BD (coluna JSON, MySQL não aceita default literal). */
+    protected $attributes = [
+        'tags' => '[]',
+    ];
+
     protected function casts(): array
     {
         return [

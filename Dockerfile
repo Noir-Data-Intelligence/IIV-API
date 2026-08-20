@@ -1,9 +1,9 @@
 FROM php:8.2-fpm-alpine
 
-# Extensões nativas do Laravel + driver PostgreSQL (arquitectura-alvo, ver
-# SIG-IIV-MEMORIA-PROJETO.md secção 15/16 — SQLite fica só para dev local).
+# Extensões nativas do Laravel + driver MySQL (BD real, externa e já
+# provisionada — ver SIG-IIV-MEMORIA-PROJETO.md secção 15/16. SQLite fica só
+# para dev local sem ligação a essa BD).
 RUN apk add --no-cache \
-        postgresql-dev \
         libzip-dev \
         icu-dev \
         oniguruma-dev \
@@ -14,8 +14,7 @@ RUN apk add --no-cache \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install -j"$(nproc)" \
         pdo \
-        pdo_pgsql \
-        pgsql \
+        pdo_mysql \
         bcmath \
         zip \
         intl \

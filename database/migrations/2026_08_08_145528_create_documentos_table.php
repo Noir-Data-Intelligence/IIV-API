@@ -22,7 +22,10 @@ return new class extends Migration
             $table->string('status')->default('rascunho');
             $table->string('visibility')->default('publico');
             $table->date('expiry_date')->nullable();
-            $table->json('tags')->default('[]');
+            // Sem `->default('[]')` a nível de BD: MySQL não aceita valor por
+            // omissão literal em colunas JSON (`SQLSTATE[42000] 1101`) —
+            // omissão fica antes a cargo do modelo (`Documento::$attributes`).
+            $table->json('tags');
             $table->uuid('current_version_id')->nullable();
             $table->timestamps();
         });

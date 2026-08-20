@@ -25,11 +25,15 @@ x-app-env: &app-env
   APP_FALLBACK_LOCALE: pt
   LOG_CHANNEL: stack
   LOG_LEVEL: info
-  DB_CONNECTION: pgsql
-  DB_HOST: postgres
-  DB_PORT: 5432
-  DB_DATABASE: ${DB_DATABASE:-sig_iiv}
-  DB_USERNAME: ${DB_USERNAME:-sig_iiv}
+  # BD MySQL externa, já provisionada — sem container/volume local a gerir
+  # aqui (ver README.md "Deploy com Docker"). Host/username/password nunca
+  # com valor por omissão: têm de vir sempre de .env.docker (nunca
+  # versionado), para a topologia/credenciais reais nunca ficarem no git.
+  DB_CONNECTION: mysql
+  DB_HOST: "${DB_HOST:?defina DB_HOST em .env.docker}"
+  DB_PORT: ${DB_PORT:-3306}
+  DB_DATABASE: ${DB_DATABASE:-iiv_db}
+  DB_USERNAME: "${DB_USERNAME:?defina DB_USERNAME em .env.docker}"
   DB_PASSWORD: "${DB_PASSWORD:?defina DB_PASSWORD em .env.docker}"
   SANCTUM_STATEFUL_DOMAINS: ${SANCTUM_STATEFUL_DOMAINS:-iiv.noirdataintelligence.com}
   FRONTEND_URL: ${FRONTEND_URL:-https://iiv.noirdataintelligence.com}
@@ -51,32 +55,16 @@ x-app-env: &app-env
   CHAT_LLM_API_KEY: ${CHAT_LLM_API_KEY:-}
 
 services:
-  postgres:
-    image: postgres:15-alpine
-    restart: unless-stopped
-    environment:
-      POSTGRES_DB: ${DB_DATABASE:-sig_iiv}
-      POSTGRES_USER: ${DB_USERNAME:-sig_iiv}
-      POSTGRES_PASSWORD: "${DB_PASSWORD:?defina DB_PASSWORD em .env.docker}"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
-
   # Serviço one-shot: corre as migrations e sai. `app`/`queue` só arrancam
   # depois deste terminar com sucesso — evita migrations em duplicado ou
-  # corridas em paralelo quando escalado horizontalmente.
+  # corridas em paralelo quando escalado horizontalmente. Sem `depends_on`
+  # de BD: liga-se directamente ao servidor MySQL externo (DB_HOST em
+  # .env.docker), não há container local para esperar/health-checkar.
   migrate:
     build: .
     command: ["php", "artisan", "migrate", "--force"]
     environment:
       <<: *app-env
-    depends_on:
-      postgres:
-        condition: service_healthy
 
   app:
     build: .
@@ -117,8 +105,7 @@ services:
     depends_on:
       - app
     # `proxy` liga este serviço ao mesmo Traefik externo do frontend (ver
-    # Front-end/docker-compose.yml). `default` mantém-se para falar com
-    # `app`/`postgres`/etc.
+    # Front-end/docker-compose.yml). `default` mantém-se para falar com `app`.
     networks:
       - default
       - proxy
@@ -142,5 +129,4 @@ networks:
     external: true
 
 volumes:
-  postgres_data:
   storage_data:
