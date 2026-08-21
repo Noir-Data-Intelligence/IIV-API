@@ -1,4 +1,4 @@
-name: Deploy VPS
+name: Deploy Laravel API
 
 on:
   push:
@@ -7,10 +7,11 @@ on:
 
 jobs:
   deploy:
+    name: Deploy to VPS
     runs-on: ubuntu-latest
 
     steps:
-      - name: Executar deploy via SSH
+      - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.2.0
 
         with:
@@ -20,12 +21,100 @@ jobs:
           port: ${{ secrets.PORT }}
 
           script: |
+            set -e
+
+            echo "======================================"
+            echo "🚀 Starting Laravel API deployment"
+            echo "======================================"
+
             cd /opt/projects/IIV-API
 
-            git pull origin master
+            echo ""
+            echo "📥 Updating repository..."
+            
+            git fetch origin master
+            git reset --hard origin/master
 
-            docker compose -f docker-compose.production.yml down
+            echo ""
+            echo "🐳 Building Docker containers..."
 
-            docker compose -f docker-compose.production.yml  --env-file .env.docker up -d --build
+            docker compose \
+              -f docker-compose.production.yml \
+              --env-file .env.docker \
+              build
+
+            echo ""
+            echo "🚀 Starting containers..."
+
+            docker compose \
+              -f docker-compose.production.yml \
+              --env-file .env.docker \
+              up -d
+
+            echo ""
+            echo "⏳ Waiting for application..."
+
+            sleep 10
+
+            echo ""
+            echo "🗄️ Running database migrations..."
+
+            docker compose \
+              -f docker-compose.production.yml \
+              --env-file .env.docker \
+              exec -T app \
+              php artisan migrate --force
+
+            echo ""
+            echo "🧹 Clearing Laravel cache..."
+
+            docker compose \
+              -f docker-compose.production.yml \
+              --env-file .env.docker \
+              exec -T app \
+              php artisan optimize:clear
+
+            echo ""
+            echo "⚡ Optimizing Laravel..."
+
+            docker compose \
+              -f docker-compose.production.yml \
+              --env-file .env.docker \
+              exec -T app \
+              php artisan config:cache
+
+            docker compose \
+              -f docker-compose.production.yml \
+              --env-file .env.docker \
+              exec -T app \
+              php artisan route:cache
+
+            docker compose \
+              -f docker-compose.production.yml \
+              --env-file .env.docker \
+              exec -T app \
+              php artisan view:cache
+
+            echo ""
+            echo "🔎 Checking containers..."
+
+            docker compose \
+              -f docker-compose.production.yml \
+              --env-file .env.docker \
+              ps
+
+            echo ""
+            echo "❤️ Checking Laravel application..."
+
+            curl --fail --silent --show-error \
+              https://apiiiv.noirdataintelligence.com/up
+
+            echo ""
+            echo "🧹 Removing unused Docker images..."
 
             docker image prune -f
+
+            echo ""
+            echo "======================================"
+            echo "✅ Deployment completed successfully"
+            echo "======================================"
