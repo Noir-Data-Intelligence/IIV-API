@@ -1,5 +1,6 @@
 services:
   migrate:
+    container_name: iiv-api
     build:
       context: .
     command: ["php", "artisan", "migrate", "--force"]
