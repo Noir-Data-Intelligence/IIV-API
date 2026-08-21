@@ -2,10 +2,12 @@
 
 namespace App\Providers;
 
+use App\Models\User;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 
@@ -69,5 +71,12 @@ class AppServiceProvider extends ServiceProvider
                 urlencode($notifiable->getEmailForPasswordReset())
             );
         });
+
+        // Fora de `local`, o Scramble (docs Swagger em /docs/api) exige este
+        // Gate — sem ele fica sempre 403 (RestrictedDocsAccess do pacote).
+        // Só admin: o schema completo da API é informação sensível para um
+        // atacante (rotas, regras de validação, estrutura de dados), mesma
+        // postura das outras correcções de segurança desta sessão.
+        Gate::define('viewApiDocs', fn (User $user) => $user->isAdmin());
     }
 }

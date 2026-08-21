@@ -19,7 +19,10 @@ use Illuminate\Http\Resources\Json\JsonResource;
 final class PaginatedResponse
 {
     /**
-     * @param  class-string<JsonResource>  $resourceClass
+     * @template TResource of JsonResource
+     *
+     * @param  class-string<TResource>  $resourceClass
+     * @return array{data: list<TResource>, meta: array{currentPage: int, perPage: int, total: int, lastPage: int}}
      */
     public static function make(LengthAwarePaginator $paginator, string $resourceClass): array
     {

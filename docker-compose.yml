@@ -112,11 +112,12 @@ services:
     labels:
       - "traefik.enable=true"
       # MESMO host do frontend (Front-end/docker-compose.yml, router `iiv`)
-      # — só `/api` e `/sanctum` (rota de CSRF cookie do Sanctum, fora do
-      # prefixo /api) vêm parar aqui. Prioridade explícita mais alta do que
-      # o router `iiv` (Host simples) para o Traefik nunca hesitar entre
-      # os dois quando ambos correspondem.
-      - "traefik.http.routers.sig-iiv-api.rule=Host(`iiv.noirdataintelligence.com`) && (PathPrefix(`/api`) || PathPrefix(`/sanctum`))"
+      # — só `/api`, `/sanctum` (rota de CSRF cookie do Sanctum, fora do
+      # prefixo /api) e `/docs` (Swagger/OpenAPI, Gate::viewApiDocs restringe
+      # a admin fora de local — ver README.md) vêm parar aqui. Prioridade
+      # explícita mais alta do que o router `iiv` (Host simples) para o
+      # Traefik nunca hesitar entre os dois quando ambos correspondem.
+      - "traefik.http.routers.sig-iiv-api.rule=Host(`iiv.noirdataintelligence.com`) && (PathPrefix(`/api`) || PathPrefix(`/sanctum`) || PathPrefix(`/docs`))"
       - "traefik.http.routers.sig-iiv-api.priority=100"
       - "traefik.http.routers.sig-iiv-api.entrypoints=websecure"
       - "traefik.http.routers.sig-iiv-api.tls=true"

@@ -51,6 +51,19 @@ docker compose --env-file .env.docker up --build
 
 Fonte de verdade: `../Front-end/src/services/api/endpoints.ts`, `../Front-end/src/types/dto/*.ts`, `../Front-end/src/mocks/handlers/*.ts`. Este backend implementa esse contrato — em caso de dúvida sobre um campo exacto, o DTO correspondente é a referência definitiva.
 
+## Documentação Swagger/OpenAPI
+
+Gerada automaticamente pelo [Scramble](https://scramble.dedoc.co) a partir do código real (rotas, FormRequests, API Resources) — sem anotações manuais, fica sempre sincronizada com o código.
+
+- UI interactiva: `/docs/api`
+- Schema OpenAPI cru: `/docs/api.json`
+
+Fora de `APP_ENV=local`, o acesso exige sessão autenticada com papel `admin` (`Gate::viewApiDocs`, `AppServiceProvider::boot()`) — o schema completo da API (rotas, regras de validação, estrutura de dados) é informação sensível para um atacante, mesma postura das restantes correcções de segurança deste projecto. Em `local`, fica aberto sem sessão.
+
+`config/scramble.php` define título/descrição/versão, o esquema de segurança (Sanctum SPA cookie-based, não bearer — ver descrição no `/docs/api`) e `App\Support\Scramble\PaginatedResponseTypeExtension`, que ensina o Scramble a tipar correctamente o envelope `{data, meta}` de `PaginatedResponse::make()` (usado por ~50 endpoints `index()`) — sem esta extensão o `data` ficava tipado como `string` em vez do array de resources.
+
+Recalcular depois de mudanças de rotas/validação: `php artisan scramble:clear` (o schema fica em cache).
+
 ## Fases de construção
 
 Ver `../SIG-IIV-MEMORIA-PROJETO.md` secção 15 para a lista completa das Ondas (Fundação → Laboratório → Produção → Qualidade → Gestão → Financeiro/Património → Pessoas/Missões → Recursos/Produção → Investigação/BI → Observatório Veterinário Nacional → Cutover). Estado actual: Ondas 1-11 concluídas, incluindo o frontend do Observatório e a ligação a este backend real; dockerização de produção completa. Gaps conhecidos: módulo Insumos ainda não implementado no backend (rota `/insumos` inexistente).
