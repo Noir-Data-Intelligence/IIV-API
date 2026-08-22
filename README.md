@@ -58,7 +58,7 @@ Gerada automaticamente pelo [Scramble](https://scramble.dedoc.co) a partir do c�
 - UI interactiva: `/docs/api`
 - Schema OpenAPI cru: `/docs/api.json`
 
-Fora de `APP_ENV=local`, o acesso exige sessão autenticada com papel `admin` (`Gate::viewApiDocs`, `AppServiceProvider::boot()`) — o schema completo da API (rotas, regras de validação, estrutura de dados) é informação sensível para um atacante, mesma postura das restantes correcções de segurança deste projecto. Em `local`, fica aberto sem sessão.
+**Temporariamente aberto sem sessão em qualquer ambiente** (pedido explícito do cliente nesta fase) — o schema é só leitura; as acções reais ("Try it out") continuam protegidas pelo Sanctum/RBAC nas próprias rotas, a documentação não contorna isso. `Dedoc\Scramble\Http\Middleware\RestrictedDocsAccess` — ver `config('scramble.middleware')` — volta a restringir `/docs/api` fora de `local` a sessões com papel `admin` (`Gate::viewApiDocs`, já definido em `AppServiceProvider::boot()`, apenas sem uso por agora) quando o cliente pedir para reactivar.
 
 `config/scramble.php` define título/descrição/versão, o esquema de segurança (Sanctum SPA cookie-based, não bearer — ver descrição no `/docs/api`) e `App\Support\Scramble\PaginatedResponseTypeExtension`, que ensina o Scramble a tipar correctamente o envelope `{data, meta}` de `PaginatedResponse::make()` (usado por ~50 endpoints `index()`) — sem esta extensão o `data` ficava tipado como `string` em vez do array de resources.
 

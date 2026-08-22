@@ -164,9 +164,15 @@ return [
      */
     'flatten_deep_query_parameters' => true,
 
+    // TEMPORÁRIO (pedido do cliente): documentação aberta sem sessão nesta
+    // fase — o schema é só leitura, as acções reais continuam protegidas
+    // pelo Sanctum/RBAC nas próprias rotas (o "Try it out" chama a API real,
+    // não contorna a autenticação). RestrictedDocsAccess::class volta a
+    // bloquear /docs/api fora de `local` a um utilizador admin quando o
+    // cliente pedir para reactivar — ver Gate::viewApiDocs em
+    // AppServiceProvider::boot(), que fica definido mas por agora sem uso.
     'middleware' => [
         'web',
-        RestrictedDocsAccess::class,
     ],
 
     'extensions' => [
