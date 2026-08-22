@@ -74,9 +74,16 @@ return [
         'enabled' => env('SCRAMBLE_DEV_TOOLS', env('APP_DEBUG', false)),
     ],
 
-    'renderer' => 'elements',
+    // 'elements' (omissão do pacote) trocado para o Swagger UI clássico a
+    // pedido do cliente — interface que já conhecem de outros projectos.
+    // View própria em resources/views/docs/swagger-ui.blade.php (CDN
+    // swagger-ui-dist, sem publicar/depender de views do pacote).
+    'renderer' => 'swagger-ui',
 
     'renderers' => [
+        'swagger-ui' => [
+            'view' => 'docs.swagger-ui',
+        ],
         /*
          * Stoplight Elements config options: https://docs.stoplight.io/docs/elements/b074dc47b2826-elements-configuration-options
          */

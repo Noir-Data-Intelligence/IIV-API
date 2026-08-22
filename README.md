@@ -62,6 +62,10 @@ Fora de `APP_ENV=local`, o acesso exige sessão autenticada com papel `admin` (`
 
 `config/scramble.php` define título/descrição/versão, o esquema de segurança (Sanctum SPA cookie-based, não bearer — ver descrição no `/docs/api`) e `App\Support\Scramble\PaginatedResponseTypeExtension`, que ensina o Scramble a tipar correctamente o envelope `{data, meta}` de `PaginatedResponse::make()` (usado por ~50 endpoints `index()`) — sem esta extensão o `data` ficava tipado como `string` em vez do array de resources.
 
+Interface: Swagger UI clássico (`resources/views/docs/swagger-ui.blade.php`, via CDN `swagger-ui-dist`), não o `elements`/Stoplight que vem por omissão no pacote — troca pedida pelo cliente, já familiarizado com o Swagger UI de outros projectos.
+
+**Atenção com `config/scramble.php`**: nunca instanciar um objecto directamente no array devolvido (ex.: `SecurityScheme::apiKey(...)`) — `php artisan config:cache` (corrido em todos os deploys, ver `.github/workflows/main.yml`) faz `var_export()` da config inteira, e um objecto sem `__set_state()` rebenta esse comando a meio do deploy (já aconteceu — commit `fad42ad`). Guardar sempre só class-strings na config e construir o objecto real dentro da própria classe (ver `App\Support\Scramble\SanctumCookieSecurityStrategy`).
+
 Recalcular depois de mudanças de rotas/validação: `php artisan scramble:clear` (o schema fica em cache).
 
 ## Fases de construção
