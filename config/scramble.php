@@ -188,14 +188,11 @@ return [
      *     ],
      * ],
      */
-    'security_strategy' => [
-        \Dedoc\Scramble\SecurityDocumentation\MiddlewareAuthSecurityStrategy::class,
-        [
-            'middleware' => ['auth', 'auth:*'],
-            // Sanctum SPA é cookie-based (ver `info.description` acima), não
-            // bearer — `apiKey`/cookie é a representação OpenAPI correcta.
-            'scheme' => \Dedoc\Scramble\Support\Generator\SecurityScheme::apiKey('cookie', 'laravel_session')
-                ->setDescription('Sessão Sanctum SPA (cookie httpOnly) — ver descrição da API para o fluxo completo com XSRF-TOKEN.'),
-        ],
-    ],
+    // Class-string, NUNCA um array com um SecurityScheme já instanciado
+    // aqui: este ficheiro tem de sobreviver a `php artisan config:cache`
+    // (var_export do array de config inteiro) — um objecto embutido rebenta
+    // esse comando em produção (`__set_state` indefinido). A construção do
+    // SecurityScheme real fica dentro de SanctumCookieSecurityStrategy,
+    // resolvida em runtime, nunca durante o load da config.
+    'security_strategy' => \App\Support\Scramble\SanctumCookieSecurityStrategy::class,
 ];
