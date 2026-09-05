@@ -91,6 +91,53 @@ class AnimalTest extends TestCase
             ->assertOk()->assertJsonPath('meta.total', 1);
     }
 
+    public function test_store_gera_brinco_automaticamente_e_ignora_tag_do_cliente(): void
+    {
+        // ANL-004: o brinco deve ser sempre gerado pelo servidor, sequencial
+        // por ano, mesmo que o cliente tente enviar um valor.
+        $estacao = Estacao::factory()->create();
+        $user = $this->comPapel(AppRole::GestorEstacao);
+        $ano = now()->year;
+
+        $primeiro = $this->actingAs($user)->postJson('/api/animais', [
+            'stationId' => $estacao->id, 'species' => 'bovino', 'tag' => 'TENTATIVA-FORJADA',
+        ])->assertCreated()->json();
+        $segundo = $this->actingAs($user)->postJson('/api/animais', [
+            'stationId' => $estacao->id, 'species' => 'caprino',
+        ])->assertCreated()->json();
+
+        $this->assertSame("IIV-{$ano}-001", $primeiro['tag']);
+        $this->assertSame("IIV-{$ano}-002", $segundo['tag']);
+    }
+
+    public function test_evento_de_transferencia_exige_destino(): void
+    {
+        $animal = Animal::factory()->create();
+        $user = $this->comPapel(AppRole::GestorEstacao);
+
+        $this->actingAs($user)->postJson("/api/animais/{$animal->id}/eventos", [
+            'eventDate' => '2026-03-01', 'eventType' => 'transferencia',
+        ])->assertStatus(422);
+
+        $response = $this->actingAs($user)->postJson("/api/animais/{$animal->id}/eventos", [
+            'eventDate' => '2026-03-01', 'eventType' => 'transferencia', 'destination' => 'Estação de Benguela',
+        ]);
+
+        $response->assertCreated()->assertJsonPath('destination', 'Estação de Benguela');
+    }
+
+    public function test_update_nao_altera_o_brinco_existente(): void
+    {
+        $animal = Animal::factory()->create(['tag' => 'IIV-2026-001']);
+        $user = $this->comPapel(AppRole::GestorEstacao);
+
+        $response = $this->actingAs($user)->putJson("/api/animais/{$animal->id}", [
+            'stationId' => $animal->station_id, 'species' => $animal->species, 'tag' => 'OUTRO-VALOR',
+        ]);
+
+        $response->assertOk()->assertJsonPath('tag', 'IIV-2026-001');
+    }
+
     public function test_store_sem_permissao_devolve_403(): void
     {
         $user = $this->comPapel(AppRole::Isv);

@@ -28,6 +28,8 @@ class DatabaseSeeder extends Seeder
             DepartmentSeeder::class,
             LaboratorioSeeder::class,
             CriterioRejeicaoSeeder::class,
+            EstacaoSeeder::class,
+            EvaluationCycleSeeder::class,
         ]);
     }
 }

@@ -15,8 +15,13 @@ class DocumentoRequest extends FormRequest
     /** @return array<string, mixed> */
     public function rules(): array
     {
+        // No update (ex.: mudança de estado via PUT), o payload pode conter
+        // só o campo que muda (ex. `{status}`) — `title` não deve ser
+        // reenviado nem exigido nesse caso.
+        $isUpdate = $this->isMethod('PUT') || $this->isMethod('PATCH');
+
         return [
-            'title' => ['required', 'string', 'max:255'],
+            'title' => [$isUpdate ? 'sometimes' : 'required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
             'categoryId' => ['nullable', 'uuid', 'exists:doc_categories,id'],
             // `ownerId` deixou de ser aceite do payload — era forjável, um

@@ -154,6 +154,40 @@ class DocumentoTest extends TestCase
         $this->actingAs($user)->getJson("/api/documentos/{$documento->id}")->assertOk();
     }
 
+    public function test_update_apenas_com_status_nao_exige_title(): void
+    {
+        // Regressao: `title` era `required` tambem no update, pelo que um PUT
+        // so com `{status}` (mudanca de estado) falhava sempre com 422.
+        $documento = Documento::factory()->create(['status' => 'rascunho']);
+        $user = $this->comPapel(AppRole::DirectorLaboratorio);
+
+        $response = $this->actingAs($user)
+            ->putJson("/api/documentos/{$documento->id}", ['status' => 'submetido']);
+
+        $response->assertOk()->assertJsonPath('status', 'submetido');
+    }
+
+    public function test_categories_store_cria_categoria(): void
+    {
+        $user = $this->comPapel(AppRole::DirectorLaboratorio);
+
+        $response = $this->actingAs($user)->postJson('/api/document-categories', ['name' => 'Qualidade']);
+
+        $response->assertCreated()->assertJsonPath('name', 'Qualidade');
+        $this->assertDatabaseHas('doc_categories', ['name' => 'Qualidade']);
+    }
+
+    public function test_categories_destroy_bloqueia_se_associada_a_documento(): void
+    {
+        $categoria = DocCategory::factory()->create();
+        Documento::factory()->create(['category_id' => $categoria->id]);
+        $user = $this->comPapel(AppRole::DirectorLaboratorio);
+
+        $this->actingAs($user)->deleteJson("/api/document-categories/{$categoria->id}")
+            ->assertStatus(422);
+        $this->assertDatabaseHas('doc_categories', ['id' => $categoria->id]);
+    }
+
     public function test_concessao_por_departamento_da_acesso_a_documento_de_departamento(): void
     {
         $department = Department::factory()->create();

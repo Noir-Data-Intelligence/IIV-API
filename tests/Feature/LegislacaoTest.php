@@ -76,4 +76,13 @@ class LegislacaoTest extends TestCase
 
         $response->assertCreated()->assertJsonPath('titulo', 'Lei da Sanidade Animal');
     }
+
+    public function test_store_rejeita_tipo_fora_do_enum(): void
+    {
+        $admin = $this->admin();
+
+        $this->actingAs($admin)->postJson('/api/legislacao', [
+            'num' => '1', 'titulo' => 'X', 'tipo' => 'tipo-invalido', 'ano' => '2026',
+        ])->assertStatus(422);
+    }
 }

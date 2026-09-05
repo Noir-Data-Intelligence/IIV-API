@@ -12,6 +12,13 @@ class Formacao extends Model
     /** @use HasFactory<FormacaoFactory> */
     use HasFactory, HasUuids;
 
+    // Sem isto, a pluralização automática do Eloquent (inglesa) gera
+    // "formacaos" a partir de "Formacao" — a tabela real, criada na
+    // migration, é "formacoes". Sem `$table` explícito, toda e qualquer
+    // query ao modelo falhava com erro SQL (causa raiz de "não permite
+    // criar formação" na auditoria funcional).
+    protected $table = 'formacoes';
+
     public $timestamps = false;
 
     protected $fillable = [

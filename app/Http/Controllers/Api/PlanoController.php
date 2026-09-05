@@ -26,6 +26,9 @@ class PlanoController extends Controller
         if ($productId = $request->string('product_id')->toString()) {
             $query->where('product_id', $productId);
         }
+        if ($status = $request->string('status')->toString()) {
+            $query->where('status', $status);
+        }
         if ($search = $request->string('search')->toString()) {
             $query->where(fn ($q) => $q->where('notes', 'like', "%{$search}%")
                 ->orWhereHas('produto', fn ($p) => $p->where('name', 'like', "%{$search}%")));

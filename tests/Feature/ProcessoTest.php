@@ -173,6 +173,30 @@ class ProcessoTest extends TestCase
         $response->assertCreated()->assertJsonPath('document.title', 'Ficha Técnica');
     }
 
+    public function test_update_funciona_sem_etapa_activa(): void
+    {
+        // Regressao: o frontend escondia Editar fora do estado "em_curso",
+        // mas o backend sempre aceitou update em qualquer estado nao-terminal.
+        $processo = Processo::factory()->create(['status' => 'aberto', 'title' => 'Original']);
+        $user = $this->comPapel(AppRole::DirectorLaboratorio);
+
+        $response = $this->actingAs($user)->putJson("/api/processos/{$processo->id}", [
+            'title' => 'Título Corrigido',
+            'priority' => 'alta',
+        ]);
+
+        $response->assertOk()->assertJsonPath('title', 'Título Corrigido')->assertJsonPath('priority', 'alta');
+    }
+
+    public function test_destroy_remove_o_processo(): void
+    {
+        $processo = Processo::factory()->create();
+        $user = $this->comPapel(AppRole::DirectorLaboratorio);
+
+        $this->actingAs($user)->deleteJson("/api/processos/{$processo->id}")->assertNoContent();
+        $this->assertDatabaseMissing('processos', ['id' => $processo->id]);
+    }
+
     public function test_store_sem_permissao_devolve_403(): void
     {
         $type = $this->tipoComEtapas();

@@ -15,10 +15,10 @@ class LoteRequest extends FormRequest
     /** @return array<string, mixed> */
     public function rules(): array
     {
-        $id = $this->route('lote')?->id;
-
         return [
-            'batchNumber' => ['required', 'string', 'max:255', 'unique:lotes,batch_number,'.$id],
+            // `batchNumber` deixou de ser aceite do cliente — gerado pelo
+            // servidor em `LoteController::gerarNumeroLote()` (ver auditoria
+            // funcional — geração automática de identificadores).
             'productId' => ['required', 'uuid', 'exists:produtos,id'],
             'quantityProduced' => ['sometimes', 'integer', 'min:0'],
             'quantityDistributed' => ['sometimes', 'integer', 'min:0'],

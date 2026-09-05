@@ -142,6 +142,20 @@ class AvaliacaoTest extends TestCase
         $this->assertDatabaseMissing('evaluations', ['id' => $evaluation->id]);
     }
 
+    public function test_stats_contabiliza_ciclo_recem_criado_ainda_planeado(): void
+    {
+        // Regressao: um ciclo criado com o estado por omissao ('planeado')
+        // nunca era contabilizado em nenhum KPI, apesar de ja aparecer na
+        // listagem "Ciclos" (ver auditoria funcional — Avaliacao/Indicador).
+        EvaluationCycle::factory()->create(['status' => 'planeado']);
+        EvaluationCycle::factory()->create(['status' => 'aberto']);
+        $user = $this->comPapel(AppRole::Admin);
+
+        $response = $this->actingAs($user)->getJson('/api/avaliacoes/stats');
+
+        $response->assertOk()->assertJsonPath('totalCycles', 2);
+    }
+
     public function test_store_sem_permissao_devolve_403(): void
     {
         $user = $this->comPapel(AppRole::Isv);

@@ -19,6 +19,7 @@ class DashboardAlertHistory extends Model
 
     protected $fillable = [
         'id', 'metric_key', 'label', 'value', 'threshold', 'tone', 'user_id',
+        'entity_type', 'entity_id', 'origem',
         'assigned_to', 'assigned_department_id', 'action_status', 'action_notes',
         'assigned_at', 'resolved_at', 'created_at',
     ];

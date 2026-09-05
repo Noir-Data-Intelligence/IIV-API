@@ -13,6 +13,7 @@ use App\Http\Resources\HealthRecordResource;
 use App\Models\Animal;
 use App\Models\AnimalEvent;
 use App\Models\AnimalHealthRecord;
+use App\Services\AnimalService;
 use App\Support\PaginatedResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -23,6 +24,8 @@ use Illuminate\Support\Str;
 class AnimalController extends Controller
 {
     use PaginatesRequests;
+
+    public function __construct(private readonly AnimalService $animalService) {}
 
     public function index(Request $request): array
     {
@@ -53,6 +56,9 @@ class AnimalController extends Controller
         $animal = Animal::query()->create([
             'id' => (string) Str::uuid(),
             ...$this->toColumns($request->validated()),
+            // Brinco sempre gerado pelo servidor — nunca aceite do cliente
+            // (ANL-004: identificador sequencial, único, não editável).
+            'tag' => $this->animalService->gerarBrinco(),
             'created_at' => now(),
         ]);
 
@@ -86,6 +92,7 @@ class AnimalController extends Controller
             'animal_id' => $animal->id,
             'event_type' => $data['eventType'] ?? 'observacao',
             'event_date' => $data['eventDate'],
+            'destination' => $data['destination'] ?? null,
             'notes' => $data['notes'] ?? null,
             'created_at' => now(),
         ]);
@@ -122,7 +129,6 @@ class AnimalController extends Controller
     {
         return [
             'station_id' => $validated['stationId'],
-            'tag' => $validated['tag'] ?? 'SEM-TAG',
             'name' => $validated['name'] ?? null,
             'species' => $validated['species'],
             'breed' => $validated['breed'] ?? null,

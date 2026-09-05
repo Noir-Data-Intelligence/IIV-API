@@ -17,7 +17,7 @@ class AmostraFactory extends Factory
         return [
             'requisicao_id' => Requisicao::factory(),
             'numero' => 'AM-'.fake()->unique()->numerify('#####'),
-            'tipo_amostra' => fake()->randomElement(['sangue', 'soro', 'fezes', 'swab', 'tecido']),
+            'tipo_amostra' => fake()->randomElement(['sangue', 'soro', 'fezes', 'zaragatoa', 'tecido']),
             'origem_matriz' => fake()->word(),
             'ponto_colheita' => fake()->city(),
             'colhida_por' => fake()->name(),

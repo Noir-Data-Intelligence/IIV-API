@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Concerns\PaginatesRequests;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\DocCategory\DocCategoryRequest;
 use App\Http\Requests\Documento\DocumentoRequest;
 use App\Http\Requests\DocVersion\DocVersionRequest;
 use App\Http\Resources\DocCategoryResource;
@@ -29,6 +30,44 @@ class DocumentoController extends Controller
     public function categories(): AnonymousResourceCollection
     {
         return DocCategoryResource::collection(DocCategory::query()->orderBy('sort_order')->get());
+    }
+
+    public function categoriesStore(DocCategoryRequest $request): JsonResponse
+    {
+        $data = $request->validated();
+
+        $category = DocCategory::query()->create([
+            'id' => (string) Str::uuid(),
+            'name' => $data['name'],
+            'icon' => $data['icon'] ?? null,
+            'sort_order' => $data['sortOrder'] ?? 0,
+        ]);
+
+        return (new DocCategoryResource($category))->response()->setStatusCode(201);
+    }
+
+    public function categoriesUpdate(DocCategoryRequest $request, DocCategory $docCategory): DocCategoryResource
+    {
+        $data = $request->validated();
+
+        $docCategory->update(array_filter([
+            'name' => $data['name'] ?? null,
+            'icon' => array_key_exists('icon', $data) ? $data['icon'] : $docCategory->icon,
+            'sort_order' => array_key_exists('sortOrder', $data) ? $data['sortOrder'] : $docCategory->sort_order,
+        ], fn ($v) => $v !== null));
+
+        return new DocCategoryResource($docCategory);
+    }
+
+    public function categoriesDestroy(DocCategory $docCategory): Response
+    {
+        if (Documento::query()->where('category_id', $docCategory->id)->exists()) {
+            abort(422, 'Não é possível eliminar uma categoria associada a documentos existentes.');
+        }
+
+        $docCategory->delete();
+
+        return response()->noContent();
     }
 
     public function index(Request $request): array

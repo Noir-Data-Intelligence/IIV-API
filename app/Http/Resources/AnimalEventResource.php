@@ -15,6 +15,7 @@ class AnimalEventResource extends JsonResource
             'animalId' => $this->animal_id,
             'eventType' => $this->event_type,
             'eventDate' => $this->event_date?->toDateString(),
+            'destination' => $this->destination,
             'notes' => $this->notes,
             'createdAt' => $this->created_at?->toISOString(),
         ];

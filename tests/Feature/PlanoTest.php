@@ -56,6 +56,21 @@ class PlanoTest extends TestCase
         $response->assertCreated()->assertJsonPath('plannedQuantity', 2000)->assertJsonPath('status', 'planeada');
     }
 
+    public function test_index_filtra_por_status(): void
+    {
+        // ANL-002: o filtro de estado nunca existia no backend nem no frontend.
+        Plano::factory()->create(['status' => 'planeada']);
+        Plano::factory()->create(['status' => 'em_producao']);
+        Plano::factory()->create(['status' => 'concluida']);
+        $user = $this->gestorStock();
+
+        $response = $this->actingAs($user)->getJson('/api/planeamento?status=em_producao');
+
+        $response->assertOk();
+        $statuses = collect($response->json('data'))->pluck('status');
+        $this->assertSame(['em_producao'], $statuses->unique()->values()->all());
+    }
+
     public function test_destroy_remove_o_plano(): void
     {
         $plano = Plano::factory()->create();

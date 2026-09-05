@@ -2,7 +2,9 @@
 
 namespace App\Http\Requests\Requisicao;
 
+use App\Enums\TipoAmostra;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 /**
  * Cria a requisição e o lote de amostras associado numa única chamada —
@@ -29,7 +31,7 @@ class RequisicaoRequest extends FormRequest
             'consentimento' => ['required', 'accepted'],
             'assinaturaCliente' => ['required', 'string'],
             'amostras' => ['required', 'array', 'min:1'],
-            'amostras.*.tipoAmostra' => ['required', 'string', 'max:255'],
+            'amostras.*.tipoAmostra' => ['required', Rule::in(array_column(TipoAmostra::cases(), 'value'))],
             'amostras.*.origemMatriz' => ['nullable', 'string', 'max:255'],
             'amostras.*.pontoColheita' => ['nullable', 'string', 'max:255'],
             'amostras.*.latitude' => ['nullable', 'numeric', 'between:-90,90'],

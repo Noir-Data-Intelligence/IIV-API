@@ -243,6 +243,9 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // --- Onda 6 — Gestão: Documentos ------------------------------------------
     Route::get('/document-categories', [DocumentoController::class, 'categories'])->middleware('module:documentos');
+    Route::post('/document-categories', [DocumentoController::class, 'categoriesStore'])->middleware('module:documentos,write');
+    Route::put('/document-categories/{docCategory}', [DocumentoController::class, 'categoriesUpdate'])->middleware('module:documentos,write');
+    Route::delete('/document-categories/{docCategory}', [DocumentoController::class, 'categoriesDestroy'])->middleware('module:documentos,write');
 
     Route::get('/documentos', [DocumentoController::class, 'index'])->middleware('module:documentos');
     Route::post('/documentos', [DocumentoController::class, 'store'])->middleware('module:documentos,write');
@@ -368,10 +371,14 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/rh-laboratorio/ausencias/{ausencia}', [RhLaboratorioController::class, 'ausenciasDestroy'])->middleware('module:rh,write');
 
     // --- Onda 8 — Formações ----------------------------------------------------
-    Route::get('/formacoes', [FormacaoController::class, 'index'])->middleware('module:rh');
-    Route::post('/formacoes', [FormacaoController::class, 'store'])->middleware('module:rh,write');
-    Route::put('/formacoes/{formacao}', [FormacaoController::class, 'update'])->middleware('module:rh,write');
-    Route::delete('/formacoes/{formacao}', [FormacaoController::class, 'destroy'])->middleware('module:rh,write');
+    // Módulo próprio `formacoes` (não `rh`) — a matriz RBAC (RolePermissionSeeder,
+    // permissions.ts) já trata Formações como módulo independente de RH; usar
+    // `rh` aqui bloqueava papéis com escrita em `formacoes` mas não em `rh`
+    // (ex.: Técnico) com 403, apesar do botão aparecer no frontend.
+    Route::get('/formacoes', [FormacaoController::class, 'index'])->middleware('module:formacoes');
+    Route::post('/formacoes', [FormacaoController::class, 'store'])->middleware('module:formacoes,write');
+    Route::put('/formacoes/{formacao}', [FormacaoController::class, 'update'])->middleware('module:formacoes,write');
+    Route::delete('/formacoes/{formacao}', [FormacaoController::class, 'destroy'])->middleware('module:formacoes,write');
 
     // --- Onda 8 — Missões (3ª máquina de estados) -------------------------------
     // /missoes/stats tem de vir ANTES de /missoes/{missao}, mesma armadilha de

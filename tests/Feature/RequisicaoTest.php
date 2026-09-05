@@ -72,6 +72,20 @@ class RequisicaoTest extends TestCase
         ])->assertStatus(422);
     }
 
+    public function test_store_rejeita_tipo_de_amostra_fora_do_enum(): void
+    {
+        $laboratorio = Laboratorio::factory()->create();
+
+        $this->actingAs($this->tecnico())->postJson('/api/requisicoes', [
+            'laboratorioId' => $laboratorio->id,
+            'tipoSujeito' => 'animal',
+            'clienteNome' => 'X',
+            'consentimento' => true,
+            'assinaturaCliente' => 'x',
+            'amostras' => [['tipoAmostra' => 'tipo-invalido']],
+        ])->assertStatus(422);
+    }
+
     public function test_show_devolve_requisicao_com_amostras_carregadas(): void
     {
         $requisicao = Requisicao::factory()->create();

@@ -55,11 +55,31 @@ class LaboratorioTest extends TestCase
     public function test_store_como_admin_cria_laboratorio(): void
     {
         $response = $this->actingAs($this->admin())->postJson('/api/laboratorios', [
-            'code' => 'AP',
             'name' => 'Parasitologia',
+            'type' => 'parasitologia',
             'validadorCount' => 2,
         ]);
 
-        $response->assertCreated()->assertJsonPath('code', 'AP')->assertJsonPath('validadorCount', 2);
+        $response->assertCreated()->assertJsonPath('validadorCount', 2);
+        $this->assertStringStartsWith('LAB-', $response->json('code'));
+    }
+
+    public function test_store_gera_codigo_automaticamente_e_ignora_codigo_do_cliente(): void
+    {
+        // ANL-similar: codigo deve ser sempre gerado pelo servidor, sequencial,
+        // mesmo que o cliente tente enviar um valor.
+        $response = $this->actingAs($this->admin())->postJson('/api/laboratorios', [
+            'code' => 'TENTATIVA-FORJADA', 'name' => 'Virologia', 'type' => 'virologia',
+        ]);
+
+        $response->assertCreated();
+        $this->assertNotSame('TENTATIVA-FORJADA', $response->json('code'));
+    }
+
+    public function test_store_rejeita_tipo_fora_do_enum(): void
+    {
+        $this->actingAs($this->admin())->postJson('/api/laboratorios', [
+            'name' => 'X', 'type' => 'tipo-invalido',
+        ])->assertStatus(422);
     }
 }

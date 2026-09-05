@@ -41,6 +41,11 @@ class AvaliacaoController extends Controller
             'pending' => Evaluation::query()->where('status', 'submetida')->count(),
             'avgScore' => Evaluation::query()->whereNotNull('global_score')->avg('global_score'),
             'activeCycleName' => $activeCycle?->name,
+            // Contagem de Ciclos (qualquer estado) — sem isto, um ciclo
+            // recém-criado (status por omissão 'planeado') nunca aparecia
+            // em nenhum KPI, apesar de já estar na listagem "Ciclos" (ver
+            // auditoria funcional — "Ciclo cadastrado não é contabilizado").
+            'totalCycles' => EvaluationCycle::query()->count(),
         ]);
     }
 

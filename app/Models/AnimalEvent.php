@@ -15,7 +15,7 @@ class AnimalEvent extends Model
 
     public $timestamps = false;
 
-    protected $fillable = ['id', 'animal_id', 'event_type', 'event_date', 'notes', 'created_at'];
+    protected $fillable = ['id', 'animal_id', 'event_type', 'event_date', 'destination', 'notes', 'created_at'];
 
     protected function casts(): array
     {

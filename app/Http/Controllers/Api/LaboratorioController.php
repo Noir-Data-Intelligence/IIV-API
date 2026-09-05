@@ -33,10 +33,24 @@ class LaboratorioController extends Controller
     {
         $laboratorio = Laboratorio::query()->create([
             'id' => (string) Str::uuid(),
+            'code' => $this->gerarCodigo(),
             ...$this->toColumns($request->validated()),
         ]);
 
         return new LaboratorioResource($laboratorio);
+    }
+
+    /**
+     * Sequencial, único, não editável (ver auditoria funcional — geração
+     * automática de identificadores). Os 9 laboratórios de referência
+     * (`LaboratorioSeeder`) usam mnemónicas próprias (AP/AB/AS/...) e nunca
+     * passam por aqui — isto só se aplica a novos laboratórios criados via UI.
+     */
+    private function gerarCodigo(): string
+    {
+        $seq = Laboratorio::query()->count() + 1;
+
+        return sprintf('LAB-%03d', $seq);
     }
 
     public function show(Laboratorio $laboratorio): LaboratorioResource
@@ -61,7 +75,6 @@ class LaboratorioController extends Controller
     private function toColumns(array $validated): array
     {
         return [
-            'code' => $validated['code'],
             'name' => $validated['name'],
             'type' => $validated['type'] ?? null,
             'description' => $validated['description'] ?? null,

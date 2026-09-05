@@ -11,6 +11,7 @@ use App\Support\PaginatedResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class LoteController extends Controller
@@ -39,11 +40,25 @@ class LoteController extends Controller
     {
         $lote = Lote::query()->create([
             'id' => (string) Str::uuid(),
+            'batch_number' => $this->gerarNumeroLote(),
             ...$this->toColumns($request->validated()),
             'created_at' => now(),
         ]);
 
         return (new LoteResource($lote))->response()->setStatusCode(201);
+    }
+
+    /**
+     * Sequencial por ano, único, não editável (ver auditoria funcional —
+     * geração automática de identificadores), seguindo o mesmo padrão de
+     * `LabWorkflowService::gerarNumeroPat()`.
+     */
+    private function gerarNumeroLote(): string
+    {
+        $ano = now()->year;
+        $count = DB::table('lotes')->where('batch_number', 'like', "LOTE-{$ano}-%")->count();
+
+        return sprintf('LOTE-%d-%04d', $ano, $count + 1);
     }
 
     public function update(LoteRequest $request, Lote $lote): LoteResource
@@ -63,7 +78,6 @@ class LoteController extends Controller
     private function toColumns(array $validated): array
     {
         return [
-            'batch_number' => $validated['batchNumber'],
             'product_id' => $validated['productId'],
             'quantity_produced' => $validated['quantityProduced'] ?? 0,
             'quantity_distributed' => $validated['quantityDistributed'] ?? 0,

@@ -17,7 +17,8 @@ class AnimalRequest extends FormRequest
     {
         return [
             'stationId' => ['required', 'uuid', 'exists:estacoes,id'],
-            'tag' => ['sometimes', 'string', 'max:100'],
+            // `tag` (brinco) nunca vem do cliente — é sempre gerado pelo
+            // servidor em `AnimalService::gerarBrinco()` (ANL-004).
             'name' => ['nullable', 'string', 'max:255'],
             'species' => ['required', 'string', 'max:100'],
             'breed' => ['nullable', 'string', 'max:100'],
