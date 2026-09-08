@@ -31,7 +31,7 @@ jobs:
 
             echo ""
             echo "📥 Updating repository..."
-            
+
             git fetch origin master
             git reset --hard origin/master
 
@@ -66,6 +66,21 @@ jobs:
               php artisan migrate --force
 
             echo ""
+            echo "🌱 Running reference data seeders (idempotent)..."
+
+            docker compose \
+              -f docker-compose.production.yml \
+              --env-file .env.docker \
+              exec -T app \
+              php artisan db:seed --class=EstacaoSeeder --force
+
+            docker compose \
+              -f docker-compose.production.yml \
+              --env-file .env.docker \
+              exec -T app \
+              php artisan db:seed --class=EvaluationCycleSeeder --force
+
+            echo ""
             echo "🧹 Clearing Laravel cache..."
 
             docker compose \
@@ -94,6 +109,14 @@ jobs:
               --env-file .env.docker \
               exec -T app \
               php artisan view:cache
+
+            echo ""
+            echo "⏰ Ensuring Laravel Scheduler cron entry is active..."
+
+            CRON_CMD="* * * * * cd /opt/projects/IIV-API && docker compose -f docker-compose.production.yml --env-file .env.docker exec -T app php artisan schedule:run >> /dev/null 2>&1"
+
+            ( crontab -l 2>/dev/null | grep -F "artisan schedule:run" > /dev/null ) || \
+            ( ( crontab -l 2>/dev/null; echo "$CRON_CMD" ) | crontab - )
 
             echo ""
             echo "🔎 Checking containers..."
