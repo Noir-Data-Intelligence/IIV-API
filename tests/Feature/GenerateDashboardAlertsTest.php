@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\DashboardAlertHistory;
+use App\Models\InseminationRecord;
 use App\Models\Insumo;
 use App\Models\Laboratorio;
 use App\Models\Lote;
@@ -100,5 +101,50 @@ class GenerateDashboardAlertsTest extends TestCase
             'entity_type' => 'nao_conformidade',
             'entity_id' => $nc->id,
         ]);
+    }
+
+    public function test_gera_alerta_para_inseminacao_com_parto_previsto_a_aproximar_se(): void
+    {
+        // Auditoria funcional, seccao 16 (Inseminacoes): "gerar alerta quando a
+        // data prevista do parto se aproximar".
+        $registo = InseminationRecord::factory()->create([
+            'expected_birth_date' => now()->addDays(3)->toDateString(),
+            'result' => 'pendente',
+        ]);
+
+        $this->artisan('alerts:generate')->assertExitCode(0);
+
+        $this->assertDatabaseHas('dashboard_alert_history', [
+            'metric_key' => 'birthsUpcoming',
+            'entity_type' => 'inseminacao',
+            'entity_id' => $registo->id,
+            'origem' => 'sistema',
+            'user_id' => null,
+        ]);
+    }
+
+    public function test_nao_gera_alerta_de_parto_fora_da_janela_de_7_dias_nem_para_inseminacao_falhada(): void
+    {
+        $distante = InseminationRecord::factory()->create([
+            'expected_birth_date' => now()->addDays(30)->toDateString(),
+            'result' => 'pendente',
+        ]);
+        $passado = InseminationRecord::factory()->create([
+            'expected_birth_date' => now()->subDay()->toDateString(),
+            'result' => 'pendente',
+        ]);
+        $falhada = InseminationRecord::factory()->create([
+            'expected_birth_date' => now()->addDays(2)->toDateString(),
+            'result' => 'falhou',
+        ]);
+
+        $this->artisan('alerts:generate');
+
+        foreach ([$distante, $passado, $falhada] as $registo) {
+            $this->assertDatabaseMissing('dashboard_alert_history', [
+                'metric_key' => 'birthsUpcoming',
+                'entity_id' => $registo->id,
+            ]);
+        }
     }
 }

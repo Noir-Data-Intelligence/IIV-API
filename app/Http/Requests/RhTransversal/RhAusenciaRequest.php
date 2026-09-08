@@ -22,7 +22,7 @@ class RhAusenciaRequest extends FormRequest
             'endDate' => ['required', 'date', 'after_or_equal:startDate'],
             'days' => ['nullable', 'integer', 'min:1'],
             'status' => ['sometimes', Rule::in(['pendente', 'aprovada', 'rejeitada', 'concluida'])],
-            'reason' => ['nullable', 'string'],
+            'reason' => ['required', 'string'],
         ];
     }
 }

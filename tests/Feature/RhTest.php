@@ -73,10 +73,44 @@ class RhTest extends TestCase
 
         $ausencia = $this->actingAs($user)->postJson('/api/rh-transversal/ausencias', [
             'employeeId' => $colaborador['id'], 'leaveType' => 'ferias',
-            'startDate' => '2026-03-01', 'endDate' => '2026-03-10',
+            'startDate' => '2026-03-01', 'endDate' => '2026-03-10', 'reason' => 'Férias anuais',
         ])->assertCreated()->json();
 
         $this->assertSame(10, $ausencia['days']);
+    }
+
+    public function test_store_colaborador_aceita_cargo_transversal_e_laboratorio(): void
+    {
+        $user = $this->comPapel(AppRole::GestorRh);
+
+        $transversal = $this->actingAs($user)->postJson('/api/rh-transversal/colaboradores', [
+            'employeeNumber' => 'IIV-0200', 'fullName' => 'Beatriz Costa', 'position' => 'Técnica Administrativa',
+        ])->assertCreated()->json();
+
+        $this->assertSame('Técnica Administrativa', $transversal['position']);
+
+        $laboratorio = $this->actingAs($user)->postJson('/api/rh-laboratorio/colaboradores', [
+            'employeeNumber' => 'IIV-0201', 'fullName' => 'Carlos Neto', 'position' => 'Técnico de Laboratório',
+        ])->assertCreated()->json();
+
+        $this->assertSame('Técnico de Laboratório', $laboratorio['position']);
+    }
+
+    public function test_store_ausencia_sem_motivo_falha_validacao_transversal_e_laboratorio(): void
+    {
+        $user = $this->comPapel(AppRole::GestorRh);
+        $transversal = RhTransversalColaborador::factory()->create();
+        $laboratorio = RhLaboratorioColaborador::factory()->create();
+
+        $this->actingAs($user)->postJson('/api/rh-transversal/ausencias', [
+            'employeeId' => $transversal->id, 'leaveType' => 'ferias',
+            'startDate' => '2026-03-01', 'endDate' => '2026-03-10',
+        ])->assertStatus(422)->assertJsonValidationErrors('reason');
+
+        $this->actingAs($user)->postJson('/api/rh-laboratorio/ausencias', [
+            'employeeId' => $laboratorio->id, 'leaveType' => 'ferias',
+            'startDate' => '2026-03-01', 'endDate' => '2026-03-10',
+        ])->assertStatus(422)->assertJsonValidationErrors('reason');
     }
 
     public function test_destroy_colaborador_transversal_arrasta_contratos_e_ausencias_em_cascata_sem_afectar_laboratorio(): void

@@ -14,6 +14,7 @@ class RhColaboradorResource extends JsonResource
             'id' => $this->id,
             'employeeNumber' => $this->employee_number,
             'fullName' => $this->full_name,
+            'position' => $this->position,
             'nationalId' => $this->national_id,
             'phone' => $this->phone,
             'email' => $this->email,

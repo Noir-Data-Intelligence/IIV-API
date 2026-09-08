@@ -20,7 +20,9 @@ class NitrogenTankRequest extends FormRequest
             'capacityL' => ['sometimes', 'numeric', 'min:0'],
             'currentLevelL' => ['sometimes', 'numeric', 'min:0'],
             'minLevelL' => ['sometimes', 'numeric', 'min:0'],
-            'lastRefillDate' => ['nullable', 'date'],
+            // A data da última recarga é sempre um facto passado — nunca pode
+            // ser futura (auditoria funcional, secção 15 — Tanques N₂).
+            'lastRefillDate' => ['nullable', 'date', 'before_or_equal:today'],
             'notes' => ['nullable', 'string'],
         ];
     }

@@ -89,6 +89,32 @@ class InseminacaoTest extends TestCase
         $this->assertDatabaseHas('semen_doses', ['id' => $dose->id, 'tank_id' => null]);
     }
 
+    public function test_store_tanque_rejeita_data_de_ultima_recarga_futura(): void
+    {
+        // Regressao da auditoria funcional (seccao 15 — Tanques N2): a data da
+        // ultima recarga e um facto passado, nao pode ser posterior a hoje.
+        $centro = IaCenter::factory()->create();
+        $user = $this->comPapel(AppRole::GestorEstacao);
+
+        $this->actingAs($user)->postJson('/api/inseminacao/tanques', [
+            'centerId' => $centro->id,
+            'code' => 'TQ-FUT',
+            'lastRefillDate' => now()->addDay()->toDateString(),
+        ])->assertStatus(422)->assertJsonValidationErrors('lastRefillDate');
+    }
+
+    public function test_store_tanque_aceita_data_de_ultima_recarga_de_hoje(): void
+    {
+        $centro = IaCenter::factory()->create();
+        $user = $this->comPapel(AppRole::GestorEstacao);
+
+        $this->actingAs($user)->postJson('/api/inseminacao/tanques', [
+            'centerId' => $centro->id,
+            'code' => 'TQ-HOJE',
+            'lastRefillDate' => now()->toDateString(),
+        ])->assertCreated();
+    }
+
     public function test_store_sem_permissao_devolve_403(): void
     {
         $user = $this->comPapel(AppRole::Isv);

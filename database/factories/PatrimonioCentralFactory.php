@@ -19,7 +19,7 @@ class PatrimonioCentralFactory extends Factory
             'description' => fake()->optional()->sentence(),
             'location' => fake()->optional()->words(2, true),
             'department_id' => null,
-            'responsible_user' => fake()->optional()->name(),
+            'responsible_user_id' => null,
             'acquisition_date' => fake()->date(),
             'acquisition_cost' => fake()->randomFloat(2, 1000, 500000),
             'current_value' => fake()->optional()->randomFloat(2, 500, 400000),

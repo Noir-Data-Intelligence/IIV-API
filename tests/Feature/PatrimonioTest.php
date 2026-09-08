@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Enums\AppRole;
+use App\Models\Department;
 use App\Models\Estacao;
 use App\Models\PatrimonioCentral;
 use App\Models\PatrimonioCentralManutencao;
@@ -87,7 +88,7 @@ class PatrimonioTest extends TestCase
 
         $this->actingAs($user)->postJson('/api/patrimonio-estacao', [
             'code' => 'PAT-EST-100', 'name' => 'Gerador', 'category' => 'energia',
-            'stationId' => $estacao->id,
+            'stationId' => $estacao->id, 'description' => 'Gerador de reserva da estação',
         ])->assertCreated();
     }
 
@@ -127,5 +128,86 @@ class PatrimonioTest extends TestCase
         $this->actingAs($user)->postJson('/api/patrimonio-central', [
             'code' => 'X', 'name' => 'X', 'category' => 'outros',
         ])->assertForbidden();
+    }
+
+    /**
+     * Auditoria funcional (01/09/2026, secção 21): "Tornar Descrição
+     * obrigatória se aplicável" — só em Estação. Central mantém-se opcional.
+     */
+    public function test_descricao_e_obrigatoria_em_estacao_mas_opcional_em_central(): void
+    {
+        $user = $this->comPapel(AppRole::GestorPatrimonio);
+        $estacao = Estacao::factory()->create();
+
+        $this->actingAs($user)->postJson('/api/patrimonio-central', [
+            'code' => 'PAT-CTR-200', 'name' => 'Microscópio', 'category' => 'equipamento_laboratorio',
+        ])->assertCreated();
+
+        $this->actingAs($user)->postJson('/api/patrimonio-estacao', [
+            'code' => 'PAT-EST-200', 'name' => 'Bomba de água', 'category' => 'energia',
+            'stationId' => $estacao->id,
+        ])->assertUnprocessable()->assertJsonValidationErrors('description');
+
+        $this->actingAs($user)->postJson('/api/patrimonio-estacao', [
+            'code' => 'PAT-EST-201', 'name' => 'Bomba de água', 'category' => 'energia',
+            'stationId' => $estacao->id, 'description' => 'Bomba de irrigação do curral',
+        ])->assertCreated();
+    }
+
+    /**
+     * Auditoria funcional (01/09/2026, secção 21): "Associar Responsável ao
+     * Departamento" — o Responsável passa a referenciar um Utilizador real
+     * (`responsibleUserId`, mesmo padrão de `IaCenter::responsible()`), e o
+     * Departamento apresentado é o desse utilizador.
+     */
+    public function test_responsavel_referencia_um_utilizador_existente_e_departamento_fica_associado(): void
+    {
+        $gestor = $this->comPapel(AppRole::GestorPatrimonio);
+        $departamento = Department::factory()->create(['name' => 'Laboratório Central']);
+        $responsavel = User::factory()->create(['full_name' => 'Ana Kiala']);
+        $responsavel->departments()->attach($departamento->id);
+
+        $central = $this->actingAs($gestor)->postJson('/api/patrimonio-central', [
+            'code' => 'PAT-CTR-300', 'name' => 'Centrífuga', 'category' => 'equipamento_laboratorio',
+            'departmentId' => $departamento->id, 'responsibleUserId' => $responsavel->id,
+        ])->assertCreated()->json();
+
+        $this->assertSame($responsavel->id, $central['responsibleUserId']);
+        $this->assertSame($departamento->id, $central['departmentId']);
+        $this->assertDatabaseHas('patrimonio_central', [
+            'id' => $central['id'], 'responsible_user_id' => $responsavel->id, 'department_id' => $departamento->id,
+        ]);
+
+        $estacaoModelo = Estacao::factory()->create();
+        $estacao = $this->actingAs($gestor)->postJson('/api/patrimonio-estacao', [
+            'code' => 'PAT-EST-300', 'name' => 'Balança', 'category' => 'equipamento_laboratorio',
+            'stationId' => $estacaoModelo->id, 'description' => 'Balança de pesagem de animais',
+            'departmentId' => $departamento->id, 'responsibleUserId' => $responsavel->id,
+        ])->assertCreated()->json();
+
+        $this->assertSame($responsavel->id, $estacao['responsibleUserId']);
+        $this->assertSame($departamento->id, $estacao['departmentId']);
+    }
+
+    public function test_responsavel_tem_de_ser_um_utilizador_existente(): void
+    {
+        $user = $this->comPapel(AppRole::GestorPatrimonio);
+
+        $this->actingAs($user)->postJson('/api/patrimonio-central', [
+            'code' => 'PAT-CTR-301', 'name' => 'Autoclave', 'category' => 'equipamento_laboratorio',
+            'responsibleUserId' => (string) Str::uuid(),
+        ])->assertUnprocessable()->assertJsonValidationErrors('responsibleUserId');
+    }
+
+    public function test_pesquisa_activo_central_pelo_nome_do_responsavel(): void
+    {
+        $user = $this->comPapel(AppRole::GestorPatrimonio);
+        $responsavel = User::factory()->create(['full_name' => 'Bento Muteka']);
+        PatrimonioCentral::factory()->create(['code' => 'PAT-CTR-302', 'responsible_user_id' => $responsavel->id]);
+        PatrimonioCentral::factory()->create(['code' => 'PAT-CTR-303', 'responsible_user_id' => null]);
+
+        $this->actingAs($user)->getJson('/api/patrimonio-central?search=Bento+Muteka')
+            ->assertOk()->assertJsonPath('meta.total', 1)
+            ->assertJsonPath('data.0.code', 'PAT-CTR-302');
     }
 }

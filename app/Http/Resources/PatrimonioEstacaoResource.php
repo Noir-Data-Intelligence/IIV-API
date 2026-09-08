@@ -19,7 +19,7 @@ class PatrimonioEstacaoResource extends JsonResource
             'location' => $this->location,
             'stationId' => $this->station_id,
             'departmentId' => $this->department_id,
-            'responsibleUser' => $this->responsible_user,
+            'responsibleUserId' => $this->responsible_user_id,
             'acquisitionDate' => $this->acquisition_date?->toDateString(),
             'acquisitionCost' => (float) $this->acquisition_cost,
             'currentValue' => $this->current_value !== null ? (float) $this->current_value : null,

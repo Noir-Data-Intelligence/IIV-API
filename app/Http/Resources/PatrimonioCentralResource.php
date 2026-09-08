@@ -18,7 +18,7 @@ class PatrimonioCentralResource extends JsonResource
             'description' => $this->description,
             'location' => $this->location,
             'departmentId' => $this->department_id,
-            'responsibleUser' => $this->responsible_user,
+            'responsibleUserId' => $this->responsible_user_id,
             'acquisitionDate' => $this->acquisition_date?->toDateString(),
             'acquisitionCost' => (float) $this->acquisition_cost,
             'currentValue' => $this->current_value !== null ? (float) $this->current_value : null,

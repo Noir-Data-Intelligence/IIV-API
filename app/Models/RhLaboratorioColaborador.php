@@ -20,7 +20,7 @@ class RhLaboratorioColaborador extends Model
     public $timestamps = false;
 
     protected $fillable = [
-        'id', 'employee_number', 'full_name', 'national_id', 'phone', 'email',
+        'id', 'employee_number', 'full_name', 'position', 'national_id', 'phone', 'email',
         'department_id', 'hire_date', 'is_active', 'qualifications', 'notes', 'created_at',
     ];
 

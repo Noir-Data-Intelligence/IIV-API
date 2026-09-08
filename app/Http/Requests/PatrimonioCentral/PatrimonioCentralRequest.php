@@ -25,7 +25,7 @@ class PatrimonioCentralRequest extends FormRequest
             'description' => ['nullable', 'string'],
             'location' => ['nullable', 'string', 'max:255'],
             'departmentId' => ['nullable', 'uuid', 'exists:departments,id'],
-            'responsibleUser' => ['nullable', 'string', 'max:255'],
+            'responsibleUserId' => ['nullable', 'uuid', 'exists:users,id'],
             'acquisitionDate' => ['nullable', 'date'],
             'acquisitionCost' => ['sometimes', 'numeric', 'min:0'],
             'currentValue' => ['nullable', 'numeric', 'min:0'],

@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Models\DashboardAlertHistory;
+use App\Models\InseminationRecord;
 use App\Models\Insumo;
 use App\Models\Lote;
 use App\Models\NaoConformidade;
@@ -14,8 +15,9 @@ use Illuminate\Support\Str;
  * sessão de utilizador (o registo anterior só acontecia quando alguém tinha
  * o Dashboard aberto no browser — ver auditoria funcional, Histórico de
  * Alertas). Cobre deliberadamente só os eventos já citados no documento
- * (lotes a expirar/expirados, stock crítico, não conformidades abertas) —
- * não é um motor de regras genérico/configurável.
+ * (lotes a expirar/expirados, stock crítico, não conformidades abertas,
+ * partos previstos a aproximar-se) — não é um motor de regras genérico/
+ * configurável.
  *
  * Um alerta por REGISTO afectado (não agregado), com `entity_type`/
  * `entity_id` — o "registo associado" pedido pela auditoria — e deduplicado
@@ -29,15 +31,19 @@ class GenerateDashboardAlerts extends Command
 {
     protected $signature = 'alerts:generate';
 
-    protected $description = 'Gera alertas de dashboard (lotes a expirar/expirados, stock crítico, não conformidades) independentes de sessão de utilizador.';
+    protected $description = 'Gera alertas de dashboard (lotes a expirar/expirados, stock crítico, não conformidades, partos previstos) independentes de sessão de utilizador.';
+
+    /** Janela (em dias) a partir da qual um parto previsto passa a gerar alerta. */
+    private const DIAS_AVISO_PARTO = 7;
 
     public function handle(): int
     {
         $lotes = $this->generateLoteAlerts();
         $insumos = $this->generateInsumoAlerts();
         $ncs = $this->generateNaoConformidadeAlerts();
+        $partos = $this->generateInseminacaoAlerts();
 
-        $this->info("Alertas gerados: {$lotes} de lotes, {$insumos} de insumos, {$ncs} de não conformidades.");
+        $this->info("Alertas gerados: {$lotes} de lotes, {$insumos} de insumos, {$ncs} de não conformidades, {$partos} de partos previstos.");
 
         return self::SUCCESS;
     }
@@ -82,6 +88,34 @@ class GenerateDashboardAlerts extends Command
         NaoConformidade::query()->whereIn('status', ['aberta', 'em_resolucao'])->each(function (NaoConformidade $nc) use (&$count) {
             $count += $this->registar('ncOpen', 'Não Conformidades', 1, 1, 'destructive', 'nao_conformidade', $nc->id) ? 1 : 0;
         });
+
+        return $count;
+    }
+
+    /**
+     * Inseminações cujo parto previsto ocorre nos próximos
+     * `DIAS_AVISO_PARTO` dias (auditoria funcional, secção 16 — "gerar alerta
+     * quando a data prevista do parto se aproximar").
+     *
+     * Exclui deliberadamente os registos com resultado `falhou`: sem gestação
+     * não há parto a acontecer, mesmo que a data prevista tenha ficado
+     * gravada no registo.
+     */
+    private function generateInseminacaoAlerts(): int
+    {
+        $count = 0;
+        $hoje = now()->toDateString();
+        $limite = now()->addDays(self::DIAS_AVISO_PARTO)->toDateString();
+
+        InseminationRecord::query()
+            ->whereNotNull('expected_birth_date')
+            ->where('result', '!=', 'falhou')
+            ->each(function (InseminationRecord $registo) use (&$count, $hoje, $limite) {
+                $parto = $registo->expected_birth_date->toDateString();
+                if ($parto >= $hoje && $parto <= $limite) {
+                    $count += $this->registar('birthsUpcoming', 'Partos Previstos', 1, 1, 'warning', 'inseminacao', $registo->id) ? 1 : 0;
+                }
+            });
 
         return $count;
     }

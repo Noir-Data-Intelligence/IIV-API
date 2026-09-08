@@ -19,7 +19,7 @@ class PatrimonioCentral extends Model
 
     protected $fillable = [
         'id', 'code', 'name', 'category', 'description', 'location', 'department_id',
-        'responsible_user', 'acquisition_date', 'acquisition_cost', 'current_value',
+        'responsible_user_id', 'acquisition_date', 'acquisition_cost', 'current_value',
         'serial_number', 'status', 'notes',
     ];
 
@@ -35,6 +35,12 @@ class PatrimonioCentral extends Model
     public function department(): BelongsTo
     {
         return $this->belongsTo(Department::class);
+    }
+
+    /** Responsável — segue o padrão de `IaCenter::responsible()`. */
+    public function responsible(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'responsible_user_id');
     }
 
     public function manutencoes(): HasMany

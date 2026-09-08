@@ -17,6 +17,7 @@ class RhColaboradorRequest extends FormRequest
         return [
             'employeeNumber' => ['required', 'string', 'max:50'],
             'fullName' => ['required', 'string', 'max:255'],
+            'position' => ['nullable', 'string', 'max:255'],
             'nationalId' => ['nullable', 'string', 'max:50'],
             'phone' => ['nullable', 'string', 'max:50'],
             'email' => ['nullable', 'email', 'max:255'],

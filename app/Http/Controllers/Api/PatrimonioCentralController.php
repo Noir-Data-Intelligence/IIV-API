@@ -31,7 +31,7 @@ class PatrimonioCentralController extends Controller
                 ->orWhere('name', 'like', "%{$search}%")
                 ->orWhere('serial_number', 'like', "%{$search}%")
                 ->orWhere('location', 'like', "%{$search}%")
-                ->orWhere('responsible_user', 'like', "%{$search}%"));
+                ->orWhereHas('responsible', fn ($r) => $r->where('full_name', 'like', "%{$search}%")));
         }
         if ($status = $request->string('status')->toString()) {
             $query->where('status', $status);
@@ -121,7 +121,7 @@ class PatrimonioCentralController extends Controller
             'description' => $validated['description'] ?? null,
             'location' => $validated['location'] ?? null,
             'department_id' => $validated['departmentId'] ?? null,
-            'responsible_user' => $validated['responsibleUser'] ?? null,
+            'responsible_user_id' => $validated['responsibleUserId'] ?? null,
             'acquisition_date' => $validated['acquisitionDate'] ?? null,
             'acquisition_cost' => $validated['acquisitionCost'] ?? 0,
             'current_value' => $validated['currentValue'] ?? null,

@@ -121,4 +121,17 @@ class FinanceiroTest extends TestCase
             'code' => '9.9', 'name' => 'X', 'type' => 'despesa',
         ])->assertForbidden();
     }
+
+    public function test_store_lancamento_sem_descricao_devolve_422(): void
+    {
+        $conta = Conta::factory()->create();
+        $user = $this->comPapel(AppRole::GestorFinanceiro);
+
+        $this->actingAs($user)->postJson('/api/lancamentos', [
+            'accountId' => $conta->id,
+            'type' => 'receita',
+            'amount' => 1000,
+            'transactionDate' => '2026-01-15',
+        ])->assertUnprocessable()->assertJsonValidationErrors(['description']);
+    }
 }

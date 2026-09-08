@@ -170,6 +170,7 @@ class RhTransversalController extends Controller
         return [
             'employee_number' => $validated['employeeNumber'],
             'full_name' => $validated['fullName'],
+            'position' => $validated['position'] ?? null,
             'national_id' => $validated['nationalId'] ?? null,
             'phone' => $validated['phone'] ?? null,
             'email' => $validated['email'] ?? null,
