@@ -82,6 +82,11 @@ class LaboratorioController extends Controller
             'sla_horas' => $validated['slaHoras'] ?? null,
             'validadores_nomeados' => $validated['validadoresNomeados'] ?? null,
             'is_active' => $validated['isActive'] ?? true,
+            'sla_rule_type' => $validated['slaRuleType'] ?? null,
+            'sla_horas_negativo' => $validated['slaHorasNegativo'] ?? null,
+            'sla_dias' => $validated['slaDias'] ?? null,
+            'sla_active' => $validated['slaActive'] ?? true,
+            'sla_severity' => $validated['slaSeverity'] ?? 'warning',
         ];
     }
 }

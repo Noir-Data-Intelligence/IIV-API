@@ -20,6 +20,11 @@ class LaboratorioResource extends JsonResource
             'slaHoras' => $this->sla_horas,
             'validadoresNomeados' => $this->validadores_nomeados,
             'isActive' => (bool) $this->is_active,
+            'slaRuleType' => $this->sla_rule_type,
+            'slaHorasNegativo' => $this->sla_horas_negativo,
+            'slaDias' => $this->sla_dias,
+            'slaActive' => (bool) $this->sla_active,
+            'slaSeverity' => $this->sla_severity,
             'createdAt' => $this->created_at?->toISOString(),
         ];
     }

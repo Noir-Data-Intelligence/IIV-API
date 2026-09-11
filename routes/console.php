@@ -10,4 +10,6 @@ Artisan::command('inspire', function () {
 
 // Requer o cron do Laravel Scheduler activo na VPS:
 // * * * * * php artisan schedule:run (ver auditoria funcional — Histórico de Alertas).
-Schedule::command('alerts:generate')->daily();
+// Cadência horária (não diária): SLAs de 24h (ex. Bacteriologia, Biologia
+// Molecular) não podem esperar por um alerta que só corre uma vez por dia.
+Schedule::command('alerts:generate')->hourly();

@@ -2,6 +2,9 @@
 
 namespace Tests\Feature;
 
+use App\Enums\BoletimStatus;
+use App\Models\Amostra;
+use App\Models\BoletimInterno;
 use App\Models\DashboardAlertHistory;
 use App\Models\InseminationRecord;
 use App\Models\Insumo;
@@ -9,6 +12,7 @@ use App\Models\Laboratorio;
 use App\Models\Lote;
 use App\Models\NaoConformidade;
 use App\Models\Produto;
+use App\Models\Requisicao;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -146,5 +150,90 @@ class GenerateDashboardAlertsTest extends TestCase
                 'entity_id' => $registo->id,
             ]);
         }
+    }
+
+    private function criarBoletimEmCurso(Laboratorio $laboratorio, \DateTimeInterface|string $entradaEm): BoletimInterno
+    {
+        $requisicao = Requisicao::factory()->create(['laboratorio_id' => $laboratorio->id]);
+        $amostra = Amostra::factory()->create(['requisicao_id' => $requisicao->id]);
+
+        return BoletimInterno::factory()->create([
+            'amostra_id' => $amostra->id,
+            'entrada_em' => $entradaEm,
+            'status' => BoletimStatus::EmAnalise,
+        ]);
+    }
+
+    public function test_gera_alerta_de_quebra_sla_para_boletim_alem_do_prazo_configurado(): void
+    {
+        $laboratorio = Laboratorio::factory()->create([
+            'sla_rule_type' => 'horas_desde_entrada',
+            'sla_horas' => 24,
+            'sla_active' => true,
+            'sla_severity' => 'destructive',
+        ]);
+        $boletim = $this->criarBoletimEmCurso($laboratorio, now()->subHours(30));
+
+        $this->artisan('alerts:generate')->assertExitCode(0);
+
+        $this->assertDatabaseHas('dashboard_alert_history', [
+            'metric_key' => 'slaBreach',
+            'entity_type' => 'boletim_interno',
+            'entity_id' => $boletim->id,
+            'tone' => 'destructive',
+            'origem' => 'sistema',
+        ]);
+    }
+
+    public function test_nao_gera_alerta_sla_dentro_do_prazo(): void
+    {
+        $laboratorio = Laboratorio::factory()->create([
+            'sla_rule_type' => 'horas_desde_entrada',
+            'sla_horas' => 24,
+            'sla_active' => true,
+        ]);
+        $boletim = $this->criarBoletimEmCurso($laboratorio, now()->subHours(2));
+
+        $this->artisan('alerts:generate');
+
+        $this->assertDatabaseMissing('dashboard_alert_history', [
+            'metric_key' => 'slaBreach',
+            'entity_id' => $boletim->id,
+        ]);
+    }
+
+    public function test_nao_gera_alerta_sla_para_laboratorio_com_sla_inactivo(): void
+    {
+        $laboratorio = Laboratorio::factory()->create([
+            'sla_rule_type' => 'horas_desde_entrada',
+            'sla_horas' => 24,
+            'sla_active' => false,
+        ]);
+        $boletim = $this->criarBoletimEmCurso($laboratorio, now()->subHours(48));
+
+        $this->artisan('alerts:generate');
+
+        $this->assertDatabaseMissing('dashboard_alert_history', [
+            'metric_key' => 'slaBreach',
+            'entity_id' => $boletim->id,
+        ]);
+    }
+
+    public function test_nao_duplica_alerta_sla_em_execucoes_sucessivas(): void
+    {
+        $laboratorio = Laboratorio::factory()->create([
+            'sla_rule_type' => 'dias_uteis',
+            'sla_dias' => 5,
+            'sla_active' => true,
+        ]);
+        $boletim = $this->criarBoletimEmCurso($laboratorio, now()->subDays(6));
+
+        $this->artisan('alerts:generate');
+        $this->artisan('alerts:generate');
+
+        $this->assertSame(
+            1,
+            DashboardAlertHistory::query()->where('metric_key', 'slaBreach')->where('entity_id', $boletim->id)->count(),
+        );
     }
 }

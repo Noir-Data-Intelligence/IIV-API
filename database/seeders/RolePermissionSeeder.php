@@ -34,6 +34,12 @@ class RolePermissionSeeder extends Seeder
                     'animais', 'inseminacao', 'auditorias', 'nao-conformidades', 'logs', 'acessibilidade',
                     'historico-alertas', 'documentos', 'processos', 'missoes', 'formacoes', 'investigacao',
                     'avaliacoes', 'bi', 'observatorio',
+                    // Pedido do cliente: gestão de equipas de Técnicos + nomeação de
+                    // validadores por laboratório — precisa de ver (não escrever) a
+                    // lista de utilizadores para os escolher. Sem escopo por
+                    // laboratório no RBAC actual (é por módulo global); aceite
+                    // deliberadamente — a UI filtra visualmente para o relevante.
+                    'utilizadores',
                 ],
                 'write' => ['laboratorios', 'analises', 'resultados', 'insumos', 'auditorias', 'nao-conformidades', 'documentos', 'processos'],
             ],

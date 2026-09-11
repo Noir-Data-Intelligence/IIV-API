@@ -28,6 +28,11 @@ class LaboratorioRequest extends FormRequest
             'validadoresNomeados' => ['nullable', 'array'],
             'validadoresNomeados.*' => ['uuid', 'exists:users,id'],
             'isActive' => ['sometimes', 'boolean'],
+            'slaRuleType' => ['nullable', Rule::in(['horas_desde_entrada', 'horas_desde_entrada_diferenciado', 'dias_uteis', 'gate_qualidade'])],
+            'slaHorasNegativo' => ['nullable', 'integer', 'min:1'],
+            'slaDias' => ['nullable', 'integer', 'min:1'],
+            'slaActive' => ['sometimes', 'boolean'],
+            'slaSeverity' => ['nullable', Rule::in(['warning', 'destructive'])],
         ];
     }
 }

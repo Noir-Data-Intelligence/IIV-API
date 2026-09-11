@@ -82,4 +82,40 @@ class LaboratorioTest extends TestCase
             'name' => 'X', 'type' => 'tipo-invalido',
         ])->assertStatus(422);
     }
+
+    public function test_update_persiste_e_expoe_configuracao_de_sla(): void
+    {
+        $laboratorio = Laboratorio::factory()->create();
+
+        $response = $this->actingAs($this->admin())->putJson("/api/laboratorios/{$laboratorio->id}", [
+            'name' => $laboratorio->name,
+            'slaRuleType' => 'horas_desde_entrada_diferenciado',
+            'slaHoras' => 72,
+            'slaHorasNegativo' => 24,
+            'slaActive' => true,
+            'slaSeverity' => 'destructive',
+        ]);
+
+        $response->assertOk()
+            ->assertJsonPath('slaRuleType', 'horas_desde_entrada_diferenciado')
+            ->assertJsonPath('slaHorasNegativo', 24)
+            ->assertJsonPath('slaActive', true)
+            ->assertJsonPath('slaSeverity', 'destructive');
+
+        $this->assertDatabaseHas('laboratorios', [
+            'id' => $laboratorio->id,
+            'sla_rule_type' => 'horas_desde_entrada_diferenciado',
+            'sla_horas_negativo' => 24,
+        ]);
+    }
+
+    public function test_update_rejeita_tipo_de_regra_sla_fora_do_enum(): void
+    {
+        $laboratorio = Laboratorio::factory()->create();
+
+        $this->actingAs($this->admin())->putJson("/api/laboratorios/{$laboratorio->id}", [
+            'name' => $laboratorio->name,
+            'slaRuleType' => 'regra-inexistente',
+        ])->assertStatus(422);
+    }
 }

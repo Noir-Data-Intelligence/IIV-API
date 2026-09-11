@@ -48,6 +48,14 @@ class User extends Authenticatable
             ->withTimestamps();
     }
 
+    public function laboratorios(): BelongsToMany
+    {
+        return $this->belongsToMany(Laboratorio::class, 'laboratorio_tecnicos')
+            ->using(LaboratorioTecnico::class)
+            ->withPivot('funcao')
+            ->withTimestamps();
+    }
+
     public function userRoles(): HasMany
     {
         return $this->hasMany(UserRole::class);

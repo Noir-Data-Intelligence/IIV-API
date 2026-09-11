@@ -7,6 +7,7 @@ use Database\Factories\LaboratorioFactory;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Laboratorio extends Model
@@ -17,6 +18,7 @@ class Laboratorio extends Model
     protected $fillable = [
         'id', 'code', 'name', 'type', 'description',
         'validador_count', 'sla_horas', 'validadores_nomeados', 'is_active',
+        'sla_rule_type', 'sla_horas_negativo', 'sla_dias', 'sla_active', 'sla_severity',
     ];
 
     protected function casts(): array
@@ -26,6 +28,9 @@ class Laboratorio extends Model
             'sla_horas' => 'integer',
             'validadores_nomeados' => 'array',
             'is_active' => 'boolean',
+            'sla_horas_negativo' => 'integer',
+            'sla_dias' => 'integer',
+            'sla_active' => 'boolean',
         ];
     }
 
@@ -37,5 +42,13 @@ class Laboratorio extends Model
     public function criteriosRejeicao(): HasMany
     {
         return $this->hasMany(CriterioRejeicao::class);
+    }
+
+    public function tecnicos(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'laboratorio_tecnicos')
+            ->using(LaboratorioTecnico::class)
+            ->withPivot('funcao')
+            ->withTimestamps();
     }
 }

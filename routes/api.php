@@ -27,6 +27,7 @@ use App\Http\Controllers\Api\InseminacaoController;
 use App\Http\Controllers\Api\InsumoController;
 use App\Http\Controllers\Api\InvestigacaoController;
 use App\Http\Controllers\Api\LaboratorioController;
+use App\Http\Controllers\Api\LaboratorioTecnicoController;
 use App\Http\Controllers\Api\LancamentoController;
 use App\Http\Controllers\Api\LegislacaoController;
 use App\Http\Controllers\Api\LogController;
@@ -177,6 +178,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/laboratorios', [LaboratorioController::class, 'store'])->middleware('module:laboratorios,write');
     Route::put('/laboratorios/{laboratorio}', [LaboratorioController::class, 'update'])->middleware('module:laboratorios,write');
     Route::delete('/laboratorios/{laboratorio}', [LaboratorioController::class, 'destroy'])->middleware('module:laboratorios,write');
+
+    // Equipa de Técnicos por laboratório (pedido do cliente: "gestão de
+    // equipas") — mesmo módulo RBAC de laboratorios, sem permissão nova.
+    Route::get('/laboratorios/{laboratorio}/tecnicos', [LaboratorioTecnicoController::class, 'index'])->middleware('module:laboratorios');
+    Route::post('/laboratorios/{laboratorio}/tecnicos', [LaboratorioTecnicoController::class, 'store'])->middleware('module:laboratorios,write');
+    Route::delete('/laboratorios/{laboratorio}/tecnicos/{user}', [LaboratorioTecnicoController::class, 'destroy'])->middleware('module:laboratorios,write');
 
     Route::get('/criterios-rejeicao', [CriterioRejeicaoController::class, 'index'])->middleware('module:laboratorios');
     Route::post('/criterios-rejeicao', [CriterioRejeicaoController::class, 'store'])->middleware('module:laboratorios,write');

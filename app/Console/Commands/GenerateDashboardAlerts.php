@@ -2,12 +2,16 @@
 
 namespace App\Console\Commands;
 
+use App\Enums\BoletimStatus;
+use App\Models\BoletimInterno;
 use App\Models\DashboardAlertHistory;
 use App\Models\InseminationRecord;
 use App\Models\Insumo;
+use App\Models\Laboratorio;
 use App\Models\Lote;
 use App\Models\NaoConformidade;
 use Illuminate\Console\Command;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 
 /**
@@ -42,8 +46,9 @@ class GenerateDashboardAlerts extends Command
         $insumos = $this->generateInsumoAlerts();
         $ncs = $this->generateNaoConformidadeAlerts();
         $partos = $this->generateInseminacaoAlerts();
+        $slas = $this->generateSlaAlerts();
 
-        $this->info("Alertas gerados: {$lotes} de lotes, {$insumos} de insumos, {$ncs} de não conformidades, {$partos} de partos previstos.");
+        $this->info("Alertas gerados: {$lotes} de lotes, {$insumos} de insumos, {$ncs} de não conformidades, {$partos} de partos previstos, {$slas} de quebras de SLA.");
 
         return self::SUCCESS;
     }
@@ -115,6 +120,61 @@ class GenerateDashboardAlerts extends Command
                 if ($parto >= $hoje && $parto <= $limite) {
                     $count += $this->registar('birthsUpcoming', 'Partos Previstos', 1, 1, 'warning', 'inseminacao', $registo->id) ? 1 : 0;
                 }
+            });
+
+        return $count;
+    }
+
+    /**
+     * Pedido do cliente: "total autonomia de configuração de alertas (SLA)
+     * para cada componente de forma independente" — cada laboratório
+     * (`Laboratorio.sla_rule_type`/`sla_active`) define o seu próprio prazo,
+     * em vez de um limiar global único. Só considera boletins ainda em
+     * curso (não `Aprovado`/`Comunicado`) com `entrada_em` registado.
+     *
+     * `horas_desde_entrada_diferenciado` (ex. Bacteriologia: 24h negativo /
+     * 72h positivo) não tem, hoje, um campo estruturado que classifique o
+     * resultado como positivo/negativo antes da validação — usa-se sempre o
+     * prazo mais curto (`sla_horas_negativo`) como cautela, nunca alertando
+     * tarde demais.
+     */
+    private function generateSlaAlerts(): int
+    {
+        $count = 0;
+
+        Laboratorio::query()
+            ->where('sla_active', true)
+            ->whereNotNull('sla_rule_type')
+            ->each(function (Laboratorio $laboratorio) use (&$count) {
+                $prazoEmHoras = match ($laboratorio->sla_rule_type) {
+                    'horas_desde_entrada' => $laboratorio->sla_horas,
+                    'horas_desde_entrada_diferenciado' => $laboratorio->sla_horas_negativo ?? $laboratorio->sla_horas,
+                    'dias_uteis' => $laboratorio->sla_dias ? $laboratorio->sla_dias * 24 : null,
+                    default => null,
+                };
+
+                if (! $prazoEmHoras) {
+                    return;
+                }
+
+                BoletimInterno::query()
+                    ->whereNotNull('entrada_em')
+                    ->whereNotIn('status', [BoletimStatus::Aprovado, BoletimStatus::Comunicado])
+                    ->whereHas('amostra.requisicao', fn ($q) => $q->where('laboratorio_id', $laboratorio->id))
+                    ->each(function (BoletimInterno $boletim) use (&$count, $laboratorio, $prazoEmHoras) {
+                        $prazo = Carbon::parse($boletim->entrada_em)->addHours($prazoEmHoras);
+                        if (now()->greaterThan($prazo)) {
+                            $count += $this->registar(
+                                'slaBreach',
+                                "Quebra de SLA — {$laboratorio->name}",
+                                1,
+                                1,
+                                $laboratorio->sla_severity ?? 'warning',
+                                'boletim_interno',
+                                $boletim->id,
+                            ) ? 1 : 0;
+                        }
+                    });
             });
 
         return $count;
