@@ -134,4 +134,22 @@ class FinanceiroTest extends TestCase
             'transactionDate' => '2026-01-15',
         ])->assertUnprocessable()->assertJsonValidationErrors(['description']);
     }
+
+    public function test_store_lancamento_com_descricao_de_1_caracter_devolve_422(): void
+    {
+        // CT-015 (relatório de QA, "Aprovado c/ Observação"): o formulário já
+        // exigia `min(2)` em `buildTransactionSchema` (Financeiro.tsx), mas o
+        // backend só validava obrigatoriedade — uma chamada directa à API
+        // conseguia gravar uma descrição de 1 carácter.
+        $conta = Conta::factory()->create();
+        $user = $this->comPapel(AppRole::GestorFinanceiro);
+
+        $this->actingAs($user)->postJson('/api/lancamentos', [
+            'accountId' => $conta->id,
+            'type' => 'receita',
+            'amount' => 1000,
+            'transactionDate' => '2026-01-15',
+            'description' => 'X',
+        ])->assertUnprocessable()->assertJsonValidationErrors(['description']);
+    }
 }
