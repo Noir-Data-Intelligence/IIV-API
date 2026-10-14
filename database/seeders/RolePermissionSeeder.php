@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Enums\AppRole;
 use App\Enums\ModuleKey;
 use App\Models\RolePermission;
+use App\Services\PermissionMatrixService;
 use Illuminate\Database\Seeder;
 
 /**
@@ -40,16 +41,19 @@ class RolePermissionSeeder extends Seeder
                     // laboratório no RBAC actual (é por módulo global); aceite
                     // deliberadamente — a UI filtra visualmente para o relevante.
                     'utilizadores',
+                    // Laboratório por fase: vê todas as fases, valida e gere o catálogo.
+                    ...ModuleKey::LAB,
                 ],
-                'write' => ['laboratorios', 'analises', 'resultados', 'insumos', 'auditorias', 'nao-conformidades', 'documentos', 'processos'],
+                'write' => ['laboratorios', 'lab-validacao', 'lab-exames', 'insumos', 'auditorias', 'nao-conformidades', 'documentos', 'processos'],
             ],
             AppRole::ResponsavelQualidade->value => [
                 'view' => [
                     'painel', 'perfil', 'laboratorios', 'analises', 'resultados',
                     'auditorias', 'nao-conformidades', 'logs', 'acessibilidade',
                     'historico-alertas', 'documentos', 'processos',
+                    'lab-recepcao', 'lab-area', 'lab-validacao', 'lab-emissao',
                 ],
-                'write' => ['auditorias', 'nao-conformidades', 'logs', 'acessibilidade', 'documentos', 'processos'],
+                'write' => ['auditorias', 'nao-conformidades', 'logs', 'acessibilidade', 'documentos', 'processos', 'lab-validacao'],
             ],
             AppRole::Tecnico->value => [
                 'view' => [
@@ -57,15 +61,22 @@ class RolePermissionSeeder extends Seeder
                     'animais', 'inseminacao', 'historico-alertas', 'documentos', 'processos',
                     'stock', 'agricultura', 'pecuaria', 'patrimonio', 'missoes', 'formacoes',
                     'investigacao', 'avaliacoes', 'observatorio',
+                    'lab-area',
                 ],
+                // DEF-002: o Técnico só trabalha DENTRO da área (lab-area, com
+                // escopo por equipa via BoletimInternoPolicy). Deixou de ter
+                // escrita em 'analises'/'resultados' (aceitava, validava e
+                // comunicava sozinho no modelo antigo).
                 'write' => [
-                    'analises', 'resultados', 'insumos', 'animais', 'inseminacao', 'documentos', 'processos',
+                    'lab-area', 'insumos', 'animais', 'inseminacao', 'documentos', 'processos',
                     'stock', 'agricultura', 'pecuaria', 'missoes', 'formacoes', 'investigacao',
                 ],
             ],
             AppRole::Recepcionista->value => [
-                'view' => ['painel', 'perfil', 'analises', 'distribuicao', 'historico-alertas', 'documentos', 'processos', 'missoes', 'formacoes', 'investigacao', 'avaliacoes'],
-                'write' => ['processos'],
+                // DEF-001/003: a Recepção (CGISC) é o único ponto de entrada e de
+                // saída — recepção/triagem/encaminhamento e emissão/entrega.
+                'view' => ['painel', 'perfil', 'analises', 'distribuicao', 'historico-alertas', 'documentos', 'processos', 'missoes', 'formacoes', 'investigacao', 'avaliacoes', 'lab-recepcao', 'lab-emissao'],
+                'write' => ['processos', 'lab-recepcao', 'lab-emissao'],
             ],
             AppRole::GestorStock->value => [
                 'view' => ['painel', 'perfil', 'insumos', 'stock', 'agricultura', 'pecuaria', 'produtos', 'lotes', 'planeamento', 'distribuicao', 'historico-alertas', 'documentos', 'processos'],
@@ -96,6 +107,7 @@ class RolePermissionSeeder extends Seeder
         ];
 
         foreach ($matrix as $role => $perms) {
+            $perms['view'] = array_values(array_unique($perms['view']));
             foreach (ModuleKey::ALL as $module) {
                 // 'id' fica de fora do payload — o Model (HasUuids) gera-o
                 // sozinho na criação; incluí-lo aqui faria o updateOrCreate
@@ -109,5 +121,9 @@ class RolePermissionSeeder extends Seeder
                 );
             }
         }
+
+        // A matriz é cacheada para sempre (PermissionMatrixService) — sem
+        // isto, um re-seed só teria efeito depois de um cache:clear manual.
+        app(PermissionMatrixService::class)->flush();
     }
 }

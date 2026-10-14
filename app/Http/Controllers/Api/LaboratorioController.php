@@ -74,7 +74,14 @@ class LaboratorioController extends Controller
 
     private function toColumns(array $validated): array
     {
-        return [
+        // Campos D.0#4/#5 só são escritos quando enviados — um formulário
+        // antigo que não os conhece não os repõe a null/false sem querer.
+        $opcionais = array_filter([
+            'responsavel_qualidade_id' => array_key_exists('responsavelQualidadeId', $validated) ? ['v' => $validated['responsavelQualidadeId']] : null,
+            'exige_pagamento_para_entrega' => array_key_exists('exigePagamentoParaEntrega', $validated) ? ['v' => (bool) $validated['exigePagamentoParaEntrega']] : null,
+        ]);
+
+        return array_map(fn ($o) => $o['v'], $opcionais) + [
             'name' => $validated['name'],
             'type' => $validated['type'] ?? null,
             'description' => $validated['description'] ?? null,

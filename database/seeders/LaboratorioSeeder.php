@@ -43,8 +43,21 @@ class LaboratorioSeeder extends Seeder
                     'sla_horas' => $slaHoras,
                     'validadores_nomeados' => $nomeados,
                     'is_active' => true,
+                    // `responsavel_qualidade_id` fica deliberadamente NULL —
+                    // a confirmar com o laboratório (D.0#5); não inventar nomes.
+                    // `exige_pagamento_para_entrega` fica no default (false, D.0#4).
                 ],
             );
+        }
+
+        // Demonstração: a conta tecnico@iiv.demo pertence à equipa de todas as
+        // áreas, para o ecrã "A Minha Área" ter conteúdo. As equipas reais são
+        // geridas em Laboratórios > Equipa (pivot `laboratorio_tecnicos`).
+        $tecnicoDemo = User::query()->where('email', 'tecnico@iiv.demo')->first();
+        if ($tecnicoDemo) {
+            foreach (Laboratorio::query()->get() as $laboratorio) {
+                $laboratorio->tecnicos()->syncWithoutDetaching([$tecnicoDemo->id => ['funcao' => 'Técnico (demo)']]);
+            }
         }
     }
 }

@@ -7,8 +7,10 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 /**
- * Cria a requisição e o lote de amostras associado numa única chamada —
- * espelha o anexo de lote dos FM-SQ-041/046 (uma requisição, N amostras).
+ * @deprecated Endpoint legado (POST /requisicoes). Usar
+ * POST /lab/recepcao/requisicoes (RegistarRequisicaoRequest), onde a área
+ * deriva dos exames pedidos. `laboratorioId` passa a opcional (só para
+ * chamadores antigos); `exames` é aceite mas não obrigatório aqui.
  */
 class RequisicaoRequest extends FormRequest
 {
@@ -21,7 +23,7 @@ class RequisicaoRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'laboratorioId' => ['required', 'uuid', 'exists:laboratorios,id'],
+            'laboratorioId' => ['nullable', 'uuid', 'exists:laboratorios,id'],
             'tipoSujeito' => ['required', 'string', 'in:animal,humano'],
             'clienteNome' => ['required', 'string', 'max:255'],
             'clienteContacto' => ['nullable', 'string', 'max:255'],
@@ -38,6 +40,11 @@ class RequisicaoRequest extends FormRequest
             'amostras.*.longitude' => ['nullable', 'numeric', 'between:-180,180'],
             'amostras.*.colhidaPor' => ['nullable', 'string', 'max:255'],
             'amostras.*.sujeito' => ['nullable', 'array'],
+            'origemTipo' => ['nullable', Rule::in(['publica', 'privada', 'singular'])],
+            'exames' => ['nullable', 'array'],
+            'exames.*.exameId' => ['required', 'uuid', 'exists:exames_catalogo,id'],
+            'exames.*.amostraIndices' => ['nullable', 'array'],
+            'exames.*.amostraIndices.*' => ['integer', 'min:0'],
         ];
     }
 }

@@ -40,9 +40,18 @@ class EnsureModulePermission
         // União de TODOS os papéis do utilizador, não só o "papel principal"
         // (ver PermissionMatrixService::canViewAny — corrige achado de
         // auditoria de segurança, 2026-08-09).
-        $allowed = $level === 'write'
-            ? $this->permissions->canWriteAny($roles, $module)
-            : $this->permissions->canViewAny($roles, $module);
+        // Vários módulos alternativos separados por "|" (basta um), ex:
+        // 'module:lab-area|lab-validacao,write' — usado no Laboratório, onde
+        // a mesma rota serve papéis de fases diferentes.
+        $allowed = false;
+        foreach (explode('|', $module) as $candidate) {
+            $allowed = $level === 'write'
+                ? $this->permissions->canWriteAny($roles, $candidate)
+                : $this->permissions->canViewAny($roles, $candidate);
+            if ($allowed) {
+                break;
+            }
+        }
 
         if (! $allowed) {
             abort(403, "Sem permissao de {$level} para o modulo {$module}.");

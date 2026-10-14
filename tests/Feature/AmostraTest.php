@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Enums\AmostraStatus;
 use App\Enums\AppRole;
 use App\Models\Amostra;
 use App\Models\CriterioRejeicao;
@@ -13,6 +12,12 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 
+/**
+ * Rotas LEGADAS `/amostras`. O fluxo antigo (aceitar num clique criando o BI
+ * já em análise; rejeitar com uma só assinatura) era o próprio DEF-001 — foi
+ * retirado (410 Gone). O fluxo novo está coberto em LabRecepcaoTest e
+ * LabFluxoCompletoTest.
+ */
 class AmostraTest extends TestCase
 {
     use RefreshDatabase;
@@ -23,65 +28,48 @@ class AmostraTest extends TestCase
         $this->seed(RolePermissionSeeder::class);
     }
 
-    private function tecnico(): User
+    private function comPapel(AppRole $role): User
     {
         $user = User::factory()->create();
-        UserRole::query()->create(['id' => (string) Str::uuid(), 'user_id' => $user->id, 'role' => AppRole::Tecnico]);
+        UserRole::query()->create(['id' => (string) Str::uuid(), 'user_id' => $user->id, 'role' => $role]);
 
         return $user;
     }
 
-    public function test_aceitar_amostra_abre_boletim_interno(): void
+    public function test_aceitar_legado_ja_nao_abre_boletim_interno_num_clique(): void
     {
         $amostra = Amostra::factory()->create();
 
-        $response = $this->actingAs($this->tecnico())->postJson("/api/amostras/{$amostra->id}/aceitar");
-
-        $response->assertOk()->assertJsonPath('status', AmostraStatus::Aceite->value);
-        $this->assertNotNull($response->json('boletimInterno.id'));
-        $this->assertNotNull($response->json('boletimInterno.numeroAnalise'));
-        $this->assertDatabaseCount('boletins_internos', 1);
+        $this->actingAs($this->comPapel(AppRole::Recepcionista))->postJson("/api/amostras/{$amostra->id}/aceitar")
+            ->assertStatus(410);
+        $this->assertDatabaseCount('boletins_internos', 0);
     }
 
-    public function test_aceitar_amostra_ja_aceite_falha(): void
-    {
-        $amostra = Amostra::factory()->create(['status' => AmostraStatus::Aceite]);
-
-        $this->actingAs($this->tecnico())->postJson("/api/amostras/{$amostra->id}/aceitar")
-            ->assertStatus(422);
-    }
-
-    public function test_rejeitar_amostra_exige_criterio_e_assinatura(): void
+    public function test_rejeitar_legado_retirado(): void
     {
         $amostra = Amostra::factory()->create();
 
-        $this->actingAs($this->tecnico())->postJson("/api/amostras/{$amostra->id}/rejeitar", [])
-            ->assertStatus(422);
+        $this->actingAs($this->comPapel(AppRole::Recepcionista))->postJson("/api/amostras/{$amostra->id}/rejeitar", [
+            'criterioRejeicaoId' => CriterioRejeicao::factory()->create()->id,
+            'assinaturaResponsavel' => 'x',
+        ])->assertStatus(410);
+        $this->assertDatabaseCount('amostra_rejeicoes', 0);
     }
 
-    public function test_rejeitar_amostra_regista_termo_de_rejeicao(): void
+    public function test_tecnico_nao_tem_acesso_as_accoes_de_recepcao(): void
     {
         $amostra = Amostra::factory()->create();
-        $criterio = CriterioRejeicao::factory()->create();
 
-        $response = $this->actingAs($this->tecnico())->postJson("/api/amostras/{$amostra->id}/rejeitar", [
-            'criterioRejeicaoId' => $criterio->id,
-            'assinaturaResponsavel' => 'assinatura-tecnico',
-            'detalhe' => 'Amostra hemolisada',
-        ]);
-
-        $response->assertOk()->assertJsonPath('status', AmostraStatus::Rejeitada->value);
-        $this->assertDatabaseHas('amostra_rejeicoes', [
-            'amostra_id' => $amostra->id,
-            'criterio_rejeicao_id' => $criterio->id,
-        ]);
+        $this->actingAs($this->comPapel(AppRole::Tecnico))->postJson("/api/amostras/{$amostra->id}/aceitar")
+            ->assertForbidden();
     }
 
-    public function test_nao_e_possivel_aceitar_uma_amostra_ja_rejeitada(): void
+    public function test_leitura_legada_continua_a_funcionar(): void
     {
-        $amostra = Amostra::factory()->create(['status' => AmostraStatus::Rejeitada]);
+        $amostra = Amostra::factory()->create();
+        $user = $this->comPapel(AppRole::Recepcionista);
 
-        $this->actingAs($this->tecnico())->postJson("/api/amostras/{$amostra->id}/aceitar")
-            ->assertStatus(422);
+        $this->actingAs($user)->getJson('/api/amostras')->assertOk()->assertJsonCount(1, 'data');
+        $this->actingAs($user)->getJson("/api/amostras/{$amostra->id}")->assertOk()->assertJsonPath('status', 'recebida');
     }
 }

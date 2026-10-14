@@ -33,6 +33,8 @@ class LaboratorioRequest extends FormRequest
             'slaDias' => ['nullable', 'integer', 'min:1'],
             'slaActive' => ['sometimes', 'boolean'],
             'slaSeverity' => ['nullable', Rule::in(['warning', 'destructive'])],
+            'responsavelQualidadeId' => ['nullable', 'uuid', 'exists:users,id'],
+            'exigePagamentoParaEntrega' => ['sometimes', 'boolean'],
         ];
     }
 }

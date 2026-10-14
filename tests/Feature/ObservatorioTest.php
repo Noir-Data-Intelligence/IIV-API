@@ -51,7 +51,7 @@ class ObservatorioTest extends TestCase
     public function test_store_requisicao_com_coordenadas_na_amostra(): void
     {
         $laboratorio = Laboratorio::factory()->create();
-        $user = $this->comPapel(AppRole::Tecnico);
+        $user = $this->comPapel(AppRole::Recepcionista);
 
         $response = $this->actingAs($user)->postJson('/api/requisicoes', [
             'laboratorioId' => $laboratorio->id,

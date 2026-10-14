@@ -3,7 +3,7 @@
 namespace Tests\Feature;
 
 use App\Enums\AppRole;
-use App\Enums\BoletimStatus;
+use App\Enums\BoletimInternoStatus;
 use App\Models\Amostra;
 use App\Models\BoletimInterno;
 use App\Models\InqueritoSatisfacao;
@@ -29,7 +29,7 @@ class InqueritoSatisfacaoTest extends TestCase
     private function requisicaoComunicada(): Requisicao
     {
         $amostra = Amostra::factory()->create();
-        BoletimInterno::factory()->create(['amostra_id' => $amostra->id, 'status' => BoletimStatus::Comunicado]);
+        BoletimInterno::factory()->create(['amostra_id' => $amostra->id, 'status' => BoletimInternoStatus::Emitido]);
 
         return $amostra->requisicao;
     }

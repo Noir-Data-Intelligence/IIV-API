@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+/** Termo de Rejeição (fase recepcao|area), com 2 assinaturas distintas. */
 class AmostraRejeicao extends Model
 {
     use HasUuids;
@@ -17,11 +18,13 @@ class AmostraRejeicao extends Model
     protected $fillable = [
         'id', 'amostra_id', 'criterio_rejeicao_id', 'responsavel_id',
         'detalhe', 'assinatura_responsavel', 'rejeitada_em',
+        'laboratorio_id', 'fase', 'boletim_interno_id', 'segundo_responsavel_id',
+        'assinatura_segundo', 'origem_notificada_em', 'accao_tomada',
     ];
 
     protected function casts(): array
     {
-        return ['rejeitada_em' => 'datetime'];
+        return ['rejeitada_em' => 'datetime', 'origem_notificada_em' => 'datetime'];
     }
 
     public function amostra(): BelongsTo
@@ -37,5 +40,15 @@ class AmostraRejeicao extends Model
     public function responsavel(): BelongsTo
     {
         return $this->belongsTo(User::class, 'responsavel_id');
+    }
+
+    public function segundoResponsavel(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'segundo_responsavel_id');
+    }
+
+    public function laboratorio(): BelongsTo
+    {
+        return $this->belongsTo(Laboratorio::class);
     }
 }

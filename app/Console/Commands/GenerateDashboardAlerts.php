@@ -2,7 +2,7 @@
 
 namespace App\Console\Commands;
 
-use App\Enums\BoletimStatus;
+use App\Enums\BoletimInternoStatus;
 use App\Models\BoletimInterno;
 use App\Models\DashboardAlertHistory;
 use App\Models\InseminationRecord;
@@ -159,8 +159,12 @@ class GenerateDashboardAlerts extends Command
 
                 BoletimInterno::query()
                     ->whereNotNull('entrada_em')
-                    ->whereNotIn('status', [BoletimStatus::Aprovado, BoletimStatus::Comunicado])
-                    ->whereHas('amostra.requisicao', fn ($q) => $q->where('laboratorio_id', $laboratorio->id))
+                    // SLA corre até à emissão do Boletim de Análises (ou rejeição na área).
+                    ->whereNotIn('status', [BoletimInternoStatus::Emitido->value, BoletimInternoStatus::RejeitadoNaArea->value])
+                    ->where(fn ($q) => $q->where('laboratorio_id', $laboratorio->id)
+                        // BI antigos (1 por amostra) sem laboratorio_id próprio.
+                        ->orWhere(fn ($legacy) => $legacy->whereNull('laboratorio_id')
+                            ->whereHas('amostra.requisicao', fn ($r) => $r->where('laboratorio_id', $laboratorio->id))))
                     ->each(function (BoletimInterno $boletim) use (&$count, $laboratorio, $prazoEmHoras) {
                         $prazo = Carbon::parse($boletim->entrada_em)->addHours($prazoEmHoras);
                         if (now()->greaterThan($prazo)) {

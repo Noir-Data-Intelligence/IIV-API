@@ -22,12 +22,22 @@ class RequisicaoTest extends TestCase
         $this->seed(RolePermissionSeeder::class);
     }
 
-    private function tecnico(): User
+    /**
+     * Rota legada `/requisicoes`: depois do redesenho do Laboratório só a
+     * Recepção (CGISC, `lab-recepcao`) regista requisições — o Técnico
+     * deixou de o poder fazer (ver test_tecnico_ja_nao_regista_requisicoes).
+     */
+    private function tecnico(AppRole $role = AppRole::Recepcionista): User
     {
         $user = User::factory()->create();
-        UserRole::query()->create(['id' => (string) Str::uuid(), 'user_id' => $user->id, 'role' => AppRole::Tecnico]);
+        UserRole::query()->create(['id' => (string) Str::uuid(), 'user_id' => $user->id, 'role' => $role]);
 
         return $user;
+    }
+
+    public function test_tecnico_ja_nao_regista_requisicoes(): void
+    {
+        $this->actingAs($this->tecnico(AppRole::Tecnico))->postJson('/api/requisicoes', [])->assertForbidden();
     }
 
     public function test_store_requer_autenticacao(): void

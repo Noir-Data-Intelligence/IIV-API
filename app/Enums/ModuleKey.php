@@ -22,7 +22,13 @@ final class ModuleKey
         'stock', 'agricultura', 'pecuaria', 'financeiro', 'patrimonio',
         'missoes', 'rh', 'formacoes', 'investigacao', 'avaliacoes', 'bi',
         'observatorio',
+        // Laboratório por fase (redesenho DEF-001/002/003). 'analises' e
+        // 'resultados' ficam só para as rotas de leitura legadas.
+        'lab-recepcao', 'lab-area', 'lab-validacao', 'lab-emissao', 'lab-exames',
     ];
+
+    /** @var list<string> */
+    public const LAB = ['lab-recepcao', 'lab-area', 'lab-validacao', 'lab-emissao', 'lab-exames'];
 
     private function __construct() {}
 }

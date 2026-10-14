@@ -27,6 +27,7 @@ class DatabaseSeeder extends Seeder
             RolePermissionSeeder::class,
             DepartmentSeeder::class,
             LaboratorioSeeder::class,
+            ExameCatalogoSeeder::class,
             CriterioRejeicaoSeeder::class,
             EstacaoSeeder::class,
             EvaluationCycleSeeder::class,

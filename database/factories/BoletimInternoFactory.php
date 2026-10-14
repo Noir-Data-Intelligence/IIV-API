@@ -2,7 +2,7 @@
 
 namespace Database\Factories;
 
-use App\Enums\BoletimStatus;
+use App\Enums\BoletimInternoStatus;
 use App\Models\Amostra;
 use App\Models\BoletimInterno;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -21,7 +21,7 @@ class BoletimInternoFactory extends Factory
             'entrada_em' => now(),
             'inicio_em' => now(),
             'conclusao_em' => null,
-            'status' => BoletimStatus::EmAnalise,
+            'status' => BoletimInternoStatus::EmAnalise,
         ];
     }
 }

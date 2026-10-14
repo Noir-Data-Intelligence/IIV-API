@@ -2,7 +2,7 @@
 
 namespace App\Http\Requests\InqueritoSatisfacao;
 
-use App\Enums\BoletimStatus;
+use App\Enums\BoletimInternoStatus;
 use App\Models\InqueritoSatisfacao;
 use App\Models\Requisicao;
 use Illuminate\Foundation\Http\FormRequest;
@@ -41,13 +41,17 @@ class InqueritoSatisfacaoRequest extends FormRequest
                 return;
             }
 
-            $requisicao = Requisicao::query()->with('amostras.boletimInterno')->find($requisicaoId);
+            $requisicao = Requisicao::query()->with('amostras.boletimInterno', 'boletinsInternos')->find($requisicaoId);
             if (! $requisicao) {
                 return;
             }
 
-            $foiComunicada = $requisicao->amostras
-                ->contains(fn ($amostra) => $amostra->boletimInterno?->status === BoletimStatus::Comunicado);
+            // Resultados comunicados = pelo menos um Boletim de Análises emitido
+            // pela CGISC (BI em `emitido`); inclui BI antigos (1 por amostra).
+            $foiComunicada = $requisicao->boletinsInternos
+                ->contains(fn ($bi) => $bi->status === BoletimInternoStatus::Emitido)
+                || $requisicao->amostras
+                    ->contains(fn ($amostra) => $amostra->boletimInterno?->status === BoletimInternoStatus::Emitido);
             if (! $foiComunicada) {
                 $validator->errors()->add(
                     'requisicaoId',

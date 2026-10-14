@@ -18,6 +18,13 @@ class AmostraRejeicaoResource extends JsonResource
             'detalhe' => $this->detalhe,
             'assinaturaResponsavel' => $this->assinatura_responsavel,
             'rejeitadaEm' => $this->rejeitada_em?->toISOString(),
+            'fase' => $this->fase,
+            'laboratorioId' => $this->laboratorio_id,
+            'boletimInternoId' => $this->boletim_interno_id,
+            'segundoResponsavelId' => $this->segundo_responsavel_id,
+            'assinaturaSegundo' => $this->assinatura_segundo,
+            'origemNotificadaEm' => $this->origem_notificada_em?->toISOString(),
+            'accaoTomada' => $this->accao_tomada,
         ];
     }
 }

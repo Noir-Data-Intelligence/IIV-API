@@ -26,6 +26,12 @@ use App\Http\Controllers\Api\InqueritoSatisfacaoController;
 use App\Http\Controllers\Api\InseminacaoController;
 use App\Http\Controllers\Api\InsumoController;
 use App\Http\Controllers\Api\InvestigacaoController;
+use App\Http\Controllers\Api\Lab\AreaController;
+use App\Http\Controllers\Api\Lab\EmissaoController;
+use App\Http\Controllers\Api\Lab\EncaminhamentoController;
+use App\Http\Controllers\Api\Lab\ExameCatalogoController;
+use App\Http\Controllers\Api\Lab\RastreabilidadeController;
+use App\Http\Controllers\Api\Lab\RecepcaoController;
 use App\Http\Controllers\Api\LaboratorioController;
 use App\Http\Controllers\Api\LaboratorioTecnicoController;
 use App\Http\Controllers\Api\LancamentoController;
@@ -37,10 +43,10 @@ use App\Http\Controllers\Api\NaoConformidadeController;
 use App\Http\Controllers\Api\NoticiaController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\ObservatorioController;
-use App\Http\Controllers\Api\PerfilController;
 use App\Http\Controllers\Api\OrcamentoController;
 use App\Http\Controllers\Api\PatrimonioCentralController;
 use App\Http\Controllers\Api\PatrimonioEstacaoController;
+use App\Http\Controllers\Api\PerfilController;
 use App\Http\Controllers\Api\PlanoController;
 use App\Http\Controllers\Api\ProcessoController;
 use App\Http\Controllers\Api\ProcessTypeController;
@@ -185,24 +191,84 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/laboratorios/{laboratorio}/tecnicos', [LaboratorioTecnicoController::class, 'store'])->middleware('module:laboratorios,write');
     Route::delete('/laboratorios/{laboratorio}/tecnicos/{user}', [LaboratorioTecnicoController::class, 'destroy'])->middleware('module:laboratorios,write');
 
-    Route::get('/criterios-rejeicao', [CriterioRejeicaoController::class, 'index'])->middleware('module:laboratorios');
+    // Critérios de rejeição: lidos também pela Recepção e pelas áreas (Termo de Rejeição).
+    Route::get('/criterios-rejeicao', [CriterioRejeicaoController::class, 'index'])->middleware('module:laboratorios|lab-recepcao|lab-area');
     Route::post('/criterios-rejeicao', [CriterioRejeicaoController::class, 'store'])->middleware('module:laboratorios,write');
     Route::delete('/criterios-rejeicao/{criterioRejeicao}', [CriterioRejeicaoController::class, 'destroy'])->middleware('module:laboratorios,write');
 
-    Route::get('/requisicoes', [RequisicaoController::class, 'index'])->middleware('module:analises');
-    Route::post('/requisicoes', [RequisicaoController::class, 'store'])->middleware('module:analises,write');
-    Route::get('/requisicoes/{requisicao}', [RequisicaoController::class, 'show'])->middleware('module:analises');
+    // --- Laboratório: rotas LEGADAS (@deprecated) --------------------------
+    // Leitura mantida; as acções de workflow antigas respondem 410 Gone
+    // (eram o próprio DEF-001/002/003). Ver bloco /lab abaixo.
+    Route::get('/requisicoes', [RequisicaoController::class, 'index'])->middleware('module:analises|lab-recepcao|lab-emissao');
+    Route::post('/requisicoes', [RequisicaoController::class, 'store'])->middleware('module:lab-recepcao,write');
+    Route::get('/requisicoes/{requisicao}', [RequisicaoController::class, 'show'])->middleware('module:analises|lab-recepcao|lab-emissao');
 
-    Route::get('/amostras', [AmostraController::class, 'index'])->middleware('module:analises');
-    Route::get('/amostras/{amostra}', [AmostraController::class, 'show'])->middleware('module:analises');
-    Route::post('/amostras/{amostra}/aceitar', [AmostraController::class, 'aceitar'])->middleware('module:analises,write');
-    Route::post('/amostras/{amostra}/rejeitar', [AmostraController::class, 'rejeitar'])->middleware('module:analises,write');
+    Route::get('/amostras', [AmostraController::class, 'index'])->middleware('module:analises|lab-recepcao');
+    Route::get('/amostras/{amostra}', [AmostraController::class, 'show'])->middleware('module:analises|lab-recepcao');
+    Route::post('/amostras/{amostra}/aceitar', [AmostraController::class, 'aceitar'])->middleware('module:lab-recepcao,write');
+    Route::post('/amostras/{amostra}/rejeitar', [AmostraController::class, 'rejeitar'])->middleware('module:lab-recepcao,write');
 
-    Route::get('/boletins', [BoletimController::class, 'index'])->middleware('module:analises');
-    Route::get('/boletins/{boletim}', [BoletimController::class, 'show'])->middleware('module:analises');
-    Route::put('/boletins/{boletim}/resultado', [BoletimController::class, 'registarResultado'])->middleware('module:analises,write');
-    Route::post('/boletins/{boletim}/validar', [BoletimController::class, 'validar'])->middleware('module:resultados,write');
-    Route::post('/boletins/{boletim}/comunicar', [BoletimController::class, 'comunicar'])->middleware('module:resultados,write');
+    Route::get('/boletins', [BoletimController::class, 'index'])->middleware('module:analises|lab-emissao|lab-validacao');
+    Route::get('/boletins/{boletim}', [BoletimController::class, 'show'])->middleware('module:analises|lab-emissao|lab-validacao');
+    Route::put('/boletins/{boletim}/resultado', [BoletimController::class, 'registarResultado'])->middleware('module:lab-area,write');
+    Route::post('/boletins/{boletim}/validar', [BoletimController::class, 'validar'])->middleware('module:lab-area|lab-validacao,write');
+    Route::post('/boletins/{boletim}/comunicar', [BoletimController::class, 'comunicar'])->middleware('module:lab-emissao,write');
+
+    // --- Laboratório por fase (redesenho DEF-001/002/003) ------------------
+    // Fase 1 Recepção (CGISC) -> Fase 2 Encaminhamento + Área -> Fase 3
+    // Emissão (CGISC). Escopo por área via BoletimInternoPolicy.
+    Route::prefix('lab')->group(function () {
+        $todosLab = 'module:lab-recepcao|lab-area|lab-validacao|lab-emissao|lab-exames';
+
+        Route::get('/colegas', [RecepcaoController::class, 'colegas'])->middleware($todosLab);
+
+        // Catálogo de exames
+        Route::get('/exames', [ExameCatalogoController::class, 'index'])->middleware('module:lab-exames|lab-recepcao|lab-area');
+        Route::post('/exames', [ExameCatalogoController::class, 'store'])->middleware('module:lab-exames,write');
+        Route::put('/exames/{exame}', [ExameCatalogoController::class, 'update'])->middleware('module:lab-exames,write');
+        Route::delete('/exames/{exame}', [ExameCatalogoController::class, 'destroy'])->middleware('module:lab-exames,write');
+
+        // Fase 1 — Recepção (CGISC)
+        Route::get('/recepcao/requisicoes', [RecepcaoController::class, 'index'])->middleware('module:lab-recepcao');
+        Route::post('/recepcao/requisicoes', [RecepcaoController::class, 'store'])->middleware('module:lab-recepcao,write');
+        Route::get('/recepcao/requisicoes/{requisicao}', [RecepcaoController::class, 'show'])->middleware('module:lab-recepcao');
+        Route::get('/recepcao/requisicoes/{requisicao}/etiquetas', [RecepcaoController::class, 'etiquetas'])->middleware('module:lab-recepcao');
+        Route::post('/recepcao/requisicoes/{requisicao}/abrir-processo', [RecepcaoController::class, 'abrirProcesso'])->middleware('module:lab-recepcao,write');
+        Route::post('/recepcao/amostras/{amostra}/conferencias', [RecepcaoController::class, 'conferir'])->middleware('module:lab-recepcao,write');
+        Route::post('/recepcao/amostras/{amostra}/aceitar-com-reserva', [RecepcaoController::class, 'aceitarComReserva'])->middleware('module:lab-recepcao,write');
+        Route::post('/recepcao/amostras/{amostra}/rejeitar', [RecepcaoController::class, 'rejeitar'])->middleware('module:lab-recepcao,write');
+
+        // Fase 2a — Encaminhamento
+        Route::get('/encaminhamentos', [EncaminhamentoController::class, 'index'])->middleware('module:lab-recepcao|lab-emissao|lab-validacao');
+        Route::post('/requisicoes/{requisicao}/encaminhar', [EncaminhamentoController::class, 'encaminharTodos'])->middleware('module:lab-recepcao,write');
+        Route::post('/boletins-internos/{boletimInterno}/encaminhar', [EncaminhamentoController::class, 'encaminhar'])->middleware('module:lab-recepcao,write');
+        Route::post('/boletins-internos/{boletimInterno}/receber-na-area', [EncaminhamentoController::class, 'receberNaArea'])->middleware('module:lab-area,write');
+        Route::post('/boletins-internos/{boletimInterno}/reencaminhar', [EncaminhamentoController::class, 'reencaminhar'])->middleware('module:lab-area,write');
+
+        // Fase 2b — Área
+        Route::get('/areas', [AreaController::class, 'minhasAreas'])->middleware('module:lab-area|lab-validacao');
+        Route::get('/areas/{laboratorio:code}/fila', [AreaController::class, 'fila'])->middleware('module:lab-area|lab-validacao');
+        Route::get('/boletins-internos/{boletimInterno}', [AreaController::class, 'show'])->middleware($todosLab);
+        Route::post('/boletins-internos/{boletimInterno}/iniciar-ensaio', [AreaController::class, 'iniciarEnsaio'])->middleware('module:lab-area,write');
+        Route::put('/boletins-internos/{boletimInterno}/ensaios', [AreaController::class, 'registarEnsaio'])->middleware('module:lab-area,write');
+        Route::post('/boletins-internos/{boletimInterno}/rejeitar-amostras', [AreaController::class, 'rejeitarAmostras'])->middleware('module:lab-area,write');
+        Route::post('/boletins-internos/{boletimInterno}/submeter-validacao', [AreaController::class, 'submeterValidacao'])->middleware('module:lab-area,write');
+        Route::post('/boletins-internos/{boletimInterno}/validar', [AreaController::class, 'validar'])->middleware('module:lab-validacao|lab-area,write');
+        Route::post('/boletins-internos/{boletimInterno}/devolver', [AreaController::class, 'devolver'])->middleware('module:lab-area,write');
+
+        // Fase 3 — Emissão (CGISC)
+        Route::get('/emissao', [EmissaoController::class, 'index'])->middleware('module:lab-emissao');
+        Route::post('/boletins-internos/{boletimInterno}/receber-devolucao', [EmissaoController::class, 'receberDevolucao'])->middleware('module:lab-emissao,write');
+        Route::post('/boletins-internos/{boletimInterno}/devolver-correccao', [EmissaoController::class, 'devolverParaCorreccao'])->middleware('module:lab-emissao,write');
+        Route::post('/boletins-internos/{boletimInterno}/emitir', [EmissaoController::class, 'emitir'])->middleware('module:lab-emissao,write');
+        Route::get('/boletins-analises/{boletimAnalise}', [EmissaoController::class, 'showBoletimAnalise'])->middleware('module:lab-emissao|lab-validacao');
+        Route::post('/boletins-analises/{boletimAnalise}/entregar', [EmissaoController::class, 'entregar'])->middleware('module:lab-emissao,write');
+        Route::post('/requisicoes/{requisicao}/encerrar', [EmissaoController::class, 'encerrar'])->middleware('module:lab-emissao,write');
+
+        // Consulta / rastreabilidade (só leitura)
+        Route::get('/processos/{requisicao}', [RastreabilidadeController::class, 'processo'])->middleware($todosLab);
+        Route::get('/amostras/{amostra}/movimentos', [RastreabilidadeController::class, 'movimentos'])->middleware($todosLab);
+    });
 
     Route::get('/inqueritos-satisfacao', [InqueritoSatisfacaoController::class, 'index'])->middleware('module:analises');
 

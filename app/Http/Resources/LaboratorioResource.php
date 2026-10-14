@@ -25,6 +25,9 @@ class LaboratorioResource extends JsonResource
             'slaDias' => $this->sla_dias,
             'slaActive' => (bool) $this->sla_active,
             'slaSeverity' => $this->sla_severity,
+            // D.0#4/#5 — a confirmar com o laboratório.
+            'responsavelQualidadeId' => $this->responsavel_qualidade_id,
+            'exigePagamentoParaEntrega' => (bool) $this->exige_pagamento_para_entrega,
             'createdAt' => $this->created_at?->toISOString(),
         ];
     }

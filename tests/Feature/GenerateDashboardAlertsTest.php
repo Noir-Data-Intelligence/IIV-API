@@ -2,7 +2,7 @@
 
 namespace Tests\Feature;
 
-use App\Enums\BoletimStatus;
+use App\Enums\BoletimInternoStatus;
 use App\Models\Amostra;
 use App\Models\BoletimInterno;
 use App\Models\DashboardAlertHistory;
@@ -160,7 +160,7 @@ class GenerateDashboardAlertsTest extends TestCase
         return BoletimInterno::factory()->create([
             'amostra_id' => $amostra->id,
             'entrada_em' => $entradaEm,
-            'status' => BoletimStatus::EmAnalise,
+            'status' => BoletimInternoStatus::EmAnalise,
         ]);
     }
 
