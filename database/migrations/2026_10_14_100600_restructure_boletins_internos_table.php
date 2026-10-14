@@ -16,6 +16,16 @@ return new class extends Migration
 {
     public function up(): void
     {
+        // MySQL recusa dropUnique('amostra_id') enquanto for o único índice a
+        // suportar a FK `amostra_id` -> `amostras` (erro 1553). O índice
+        // substituto tem de existir ANTES de remover o unique (SQLite não
+        // acusa esta ordem, por isso só aparece contra MySQL/produção).
+        if (! Schema::hasIndex('boletins_internos', ['amostra_id'], 'index')) {
+            Schema::table('boletins_internos', function (Blueprint $table) {
+                $table->index('amostra_id');
+            });
+        }
+
         if (Schema::hasIndex('boletins_internos', ['amostra_id'], 'unique')) {
             Schema::table('boletins_internos', function (Blueprint $table) {
                 $table->dropUnique(['amostra_id']);
@@ -28,7 +38,6 @@ return new class extends Migration
         });
 
         Schema::table('boletins_internos', function (Blueprint $table) {
-            $table->index('amostra_id');
             $table->foreignUuid('requisicao_id')->nullable()->constrained('requisicoes')->cascadeOnDelete();
             $table->foreignUuid('laboratorio_id')->nullable()->constrained('laboratorios');
             $table->string('numero')->nullable()->unique(); // PAT-###-ANO/AB
