@@ -38,27 +38,39 @@ class LoteController extends Controller
 
     public function store(LoteRequest $request): JsonResponse
     {
-        $lote = Lote::query()->create([
-            'id' => (string) Str::uuid(),
-            'batch_number' => $this->gerarNumeroLote(),
-            ...$this->toColumns($request->validated()),
-            'created_at' => now(),
-        ]);
+        // Geração do número e insert partilham a mesma transacção/lock (CT-010 —
+        // relatório de QA: `count()+1` colidia com a constraint `unique` depois de
+        // eliminar um lote a meio da sequência, e em pedidos concorrentes).
+        $lote = DB::transaction(function () use ($request) {
+            return Lote::query()->create([
+                'id' => (string) Str::uuid(),
+                'batch_number' => $this->gerarNumeroLote(),
+                ...$this->toColumns($request->validated()),
+                'created_at' => now(),
+            ]);
+        });
 
         return (new LoteResource($lote))->response()->setStatusCode(201);
     }
 
     /**
      * Sequencial por ano, único, não editável (ver auditoria funcional —
-     * geração automática de identificadores), seguindo o mesmo padrão de
-     * `LabWorkflowService::gerarNumeroPat()`.
+     * geração automática de identificadores). Usa o máximo existente (não a
+     * contagem) para não reutilizar um número já atribuído a um lote
+     * entretanto eliminado, e `lockForUpdate()` para serializar pedidos
+     * concorrentes dentro da transacção de `store()`.
      */
     private function gerarNumeroLote(): string
     {
         $ano = now()->year;
-        $count = DB::table('lotes')->where('batch_number', 'like', "LOTE-{$ano}-%")->count();
+        $max = DB::table('lotes')
+            ->where('batch_number', 'like', "LOTE-{$ano}-%")
+            ->lockForUpdate()
+            ->max('batch_number');
 
-        return sprintf('LOTE-%d-%04d', $ano, $count + 1);
+        $proximo = $max ? ((int) substr($max, -4)) + 1 : 1;
+
+        return sprintf('LOTE-%d-%04d', $ano, $proximo);
     }
 
     public function update(LoteRequest $request, Lote $lote): LoteResource

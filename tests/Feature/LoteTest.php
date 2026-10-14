@@ -90,4 +90,33 @@ class LoteTest extends TestCase
         $this->assertSame("LOTE-{$ano}-0001", $primeiro['batchNumber']);
         $this->assertSame("LOTE-{$ano}-0002", $segundo['batchNumber']);
     }
+
+    /**
+     * CT-010 (relatório de QA): `count()+1` reutilizava o número do lote
+     * eliminado e a criação seguinte rebentava com violação da constraint
+     * `unique` em `batch_number`. Usar o máximo existente evita a colisão.
+     */
+    public function test_store_nao_reutiliza_numero_apos_eliminar_lote_do_meio(): void
+    {
+        $produto = Produto::factory()->create();
+        $user = $this->gestorStock();
+        $ano = now()->year;
+        $payload = fn () => [
+            'productId' => $produto->id, 'productionDate' => '2026-06-01', 'expiryDate' => '2027-06-01',
+        ];
+
+        $primeiro = $this->actingAs($user)->postJson('/api/lotes', $payload())->assertCreated()->json();
+        $segundo = $this->actingAs($user)->postJson('/api/lotes', $payload())->assertCreated()->json();
+        $terceiro = $this->actingAs($user)->postJson('/api/lotes', $payload())->assertCreated()->json();
+
+        $this->assertSame("LOTE-{$ano}-0001", $primeiro['batchNumber']);
+        $this->assertSame("LOTE-{$ano}-0002", $segundo['batchNumber']);
+        $this->assertSame("LOTE-{$ano}-0003", $terceiro['batchNumber']);
+
+        $this->actingAs($user)->deleteJson("/api/lotes/{$primeiro['id']}")->assertNoContent();
+
+        $quarto = $this->actingAs($user)->postJson('/api/lotes', $payload())->assertCreated()->json();
+
+        $this->assertSame("LOTE-{$ano}-0004", $quarto['batchNumber']);
+    }
 }
