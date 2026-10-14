@@ -54,7 +54,10 @@ jobs:
             echo ""
             echo "🔁 Restarting nginx (fastcgi_pass resolve o IP do app uma só vez, ao arrancar — tem de ser reiniciado sempre que o container app é recriado, senão fica a apontar para um IP morto e devolve 502)..."
 
-            docker restart nginx
+            docker compose \
+              -f docker-compose.production.yml \
+              --env-file .env.docker \
+              restart nginx
 
             echo ""
             echo "⏳ Waiting for application..."
@@ -141,7 +144,6 @@ jobs:
             echo "🧹 Removing unused Docker images..."
 
             docker image prune -f
-            docker restart nginx
 
             echo ""
             echo "======================================"
