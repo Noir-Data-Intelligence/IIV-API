@@ -83,6 +83,8 @@ class ProcessoController extends Controller
         return (new ProcessoResource($processo))->response()->setStatusCode(201);
     }
 
+    // `status` nunca é aceite aqui — avançar/devolver/cancelar são as únicas
+    // transições válidas (ver UpdateProcessoRequest/ProcessWorkflowService).
     public function update(UpdateProcessoRequest $request, Processo $processo): ProcessoResource
     {
         $data = $request->validated();
@@ -92,7 +94,6 @@ class ProcessoController extends Controller
             'description' => array_key_exists('description', $data) ? $data['description'] : null,
             'priority' => $data['priority'] ?? null,
             'due_date' => array_key_exists('dueDate', $data) ? $data['dueDate'] : $processo->due_date,
-            'status' => $data['status'] ?? null,
         ], fn ($v) => $v !== null));
 
         return new ProcessoResource($processo);

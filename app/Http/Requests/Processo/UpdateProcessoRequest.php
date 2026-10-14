@@ -12,7 +12,15 @@ class UpdateProcessoRequest extends FormRequest
         return true;
     }
 
-    /** @return array<string, mixed> */
+    /**
+     * `status` fica deliberadamente fora das regras: avançar/devolver/cancelar
+     * são as únicas transições válidas (ver ProcessWorkflowService) — um
+     * salto arbitrário via PUT bypassava a máquina de estados do workflow
+     * (CT-004, QA Gestão de Processos, Não executado). Qualquer `status` que
+     * o cliente envie aqui é ignorado por `$request->validated()`.
+     *
+     * @return array<string, mixed>
+     */
     public function rules(): array
     {
         return [
@@ -20,7 +28,6 @@ class UpdateProcessoRequest extends FormRequest
             'description' => ['sometimes', 'nullable', 'string'],
             'priority' => ['sometimes', Rule::in(['baixa', 'normal', 'alta', 'urgente'])],
             'dueDate' => ['sometimes', 'nullable', 'date'],
-            'status' => ['sometimes', Rule::in(['aberto', 'em_curso', 'concluido', 'cancelado'])],
         ];
     }
 }

@@ -206,4 +206,133 @@ class ProcessoTest extends TestCase
             'typeId' => $type->id, 'title' => 'X', 'priority' => 'normal', 'requesterId' => $user->id,
         ])->assertForbidden();
     }
+
+    // --- CT-003: edição/eliminação + auditoria ------------------------------
+
+    public function test_update_regista_evento_de_auditoria(): void
+    {
+        $processo = Processo::factory()->create(['status' => 'aberto', 'title' => 'Original']);
+        $user = $this->comPapel(AppRole::DirectorLaboratorio);
+
+        $this->actingAs($user)->putJson("/api/processos/{$processo->id}", ['title' => 'Novo'])->assertOk();
+
+        $this->assertDatabaseHas('audit_logs', [
+            'auditable_type' => Processo::class,
+            'auditable_id' => $processo->id,
+            'action' => 'updated',
+        ]);
+    }
+
+    public function test_destroy_regista_evento_de_auditoria(): void
+    {
+        $processo = Processo::factory()->create();
+        $user = $this->comPapel(AppRole::DirectorLaboratorio);
+
+        $this->actingAs($user)->deleteJson("/api/processos/{$processo->id}")->assertNoContent();
+
+        $this->assertDatabaseHas('audit_logs', [
+            'auditable_type' => Processo::class,
+            'auditable_id' => $processo->id,
+            'action' => 'deleted',
+        ]);
+    }
+
+    /**
+     * Regressão CT-003: `process_steps`/`process_events` ligavam-se a
+     * `processos` sem `cascadeOnDelete()`, pelo que apagar qualquer processo
+     * já instanciado (criado via POST, logo com etapas + evento "aberto")
+     * rebentava com "FOREIGN KEY constraint failed" em vez de remover o
+     * registo da listagem.
+     */
+    public function test_destroy_remove_processo_com_etapas_e_eventos_instanciados(): void
+    {
+        $type = $this->tipoComEtapas();
+        $user = $this->comPapel(AppRole::DirectorLaboratorio);
+        $processoId = $this->actingAs($user)->postJson('/api/processos', [
+            'typeId' => $type->id, 'title' => 'X', 'priority' => 'normal', 'requesterId' => $user->id,
+        ])->json('id');
+
+        $this->actingAs($user)->deleteJson("/api/processos/{$processoId}")->assertNoContent();
+
+        $this->assertDatabaseMissing('processos', ['id' => $processoId]);
+        $this->assertDatabaseMissing('process_steps', ['process_id' => $processoId]);
+        $this->assertDatabaseMissing('process_events', ['process_id' => $processoId]);
+    }
+
+    public function test_update_sem_permissao_de_escrita_devolve_403(): void
+    {
+        $processo = Processo::factory()->create();
+        $user = $this->comPapel(AppRole::Isv); // só "view" em processos
+
+        $this->actingAs($user)->putJson("/api/processos/{$processo->id}", ['title' => 'X'])->assertForbidden();
+        $this->assertDatabaseHas('processos', ['id' => $processo->id, 'title' => $processo->title]);
+    }
+
+    public function test_destroy_sem_permissao_de_escrita_devolve_403(): void
+    {
+        $processo = Processo::factory()->create();
+        $user = $this->comPapel(AppRole::Isv);
+
+        $this->actingAs($user)->deleteJson("/api/processos/{$processo->id}")->assertForbidden();
+        $this->assertDatabaseHas('processos', ['id' => $processo->id]);
+    }
+
+    // --- CT-004: estado/prioridade + RBAC ------------------------------------
+
+    /**
+     * Regressão CT-004: o PUT genérico aceitava `status` e deixava o cliente
+     * saltar directamente para qualquer estado do enum, contornando a máquina
+     * de estados do `ProcessWorkflowService` (avançar/devolver/cancelar são
+     * as únicas transições válidas).
+     */
+    public function test_update_ignora_status_enviado_pelo_cliente(): void
+    {
+        $type = $this->tipoComEtapas();
+        $user = $this->comPapel(AppRole::DirectorLaboratorio);
+        $processoId = $this->actingAs($user)->postJson('/api/processos', [
+            'typeId' => $type->id, 'title' => 'X', 'priority' => 'normal', 'requesterId' => $user->id,
+        ])->json('id');
+
+        // Processo está "em_curso" na 1ª etapa — tentativa de salto directo
+        // para "concluido" via PUT, sem passar por /avancar.
+        $response = $this->actingAs($user)->putJson("/api/processos/{$processoId}", [
+            'status' => 'concluido',
+            'title' => 'X actualizado',
+        ]);
+
+        $response->assertOk()
+            ->assertJsonPath('status', 'em_curso')
+            ->assertJsonPath('title', 'X actualizado');
+
+        $steps = $this->actingAs($user)->getJson("/api/processos/{$processoId}/etapas")->json();
+        $this->assertSame('em_curso', $steps[0]['status']);
+    }
+
+    public function test_update_altera_prioridade_e_persiste(): void
+    {
+        $processo = Processo::factory()->create(['priority' => 'normal']);
+        $user = $this->comPapel(AppRole::DirectorLaboratorio);
+
+        $this->actingAs($user)->putJson("/api/processos/{$processo->id}", ['priority' => 'urgente'])
+            ->assertOk()->assertJsonPath('priority', 'urgente');
+
+        $this->assertDatabaseHas('processos', ['id' => $processo->id, 'priority' => 'urgente']);
+    }
+
+    public function test_avancar_sem_permissao_de_escrita_devolve_403(): void
+    {
+        $processo = Processo::factory()->create();
+        $user = $this->comPapel(AppRole::Isv);
+
+        $this->actingAs($user)->postJson("/api/processos/{$processo->id}/avancar")->assertForbidden();
+    }
+
+    public function test_cancelar_sem_permissao_de_escrita_devolve_403(): void
+    {
+        $processo = Processo::factory()->create();
+        $user = $this->comPapel(AppRole::Isv);
+
+        $this->actingAs($user)->postJson("/api/processos/{$processo->id}/cancelar")->assertForbidden();
+        $this->assertDatabaseHas('processos', ['id' => $processo->id, 'status' => $processo->status]);
+    }
 }
