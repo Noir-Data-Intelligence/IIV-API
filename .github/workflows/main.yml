@@ -80,6 +80,18 @@ jobs:
               -f docker-compose.production.yml \
               --env-file .env.docker \
               exec -T app \
+              php artisan db:seed --class=RolePermissionSeeder --force
+
+            docker compose \
+              -f docker-compose.production.yml \
+              --env-file .env.docker \
+              exec -T app \
+              php artisan db:seed --class=ExameCatalogoSeeder --force
+
+            docker compose \
+              -f docker-compose.production.yml \
+              --env-file .env.docker \
+              exec -T app \
               php artisan db:seed --class=EstacaoSeeder --force
 
             docker compose \

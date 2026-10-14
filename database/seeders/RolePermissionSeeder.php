@@ -51,7 +51,7 @@ class RolePermissionSeeder extends Seeder
                     'painel', 'perfil', 'laboratorios', 'analises', 'resultados',
                     'auditorias', 'nao-conformidades', 'logs', 'acessibilidade',
                     'historico-alertas', 'documentos', 'processos',
-                    'lab-recepcao', 'lab-area', 'lab-validacao', 'lab-emissao',
+                    'lab-recepcao', 'lab-area', 'lab-validacao', 'lab-emissao', 'lab-exames',
                 ],
                 'write' => ['auditorias', 'nao-conformidades', 'logs', 'acessibilidade', 'documentos', 'processos', 'lab-validacao'],
             ],
@@ -61,7 +61,7 @@ class RolePermissionSeeder extends Seeder
                     'animais', 'inseminacao', 'historico-alertas', 'documentos', 'processos',
                     'stock', 'agricultura', 'pecuaria', 'patrimonio', 'missoes', 'formacoes',
                     'investigacao', 'avaliacoes', 'observatorio',
-                    'lab-area',
+                    'lab-area', 'lab-exames',
                 ],
                 // DEF-002: o Técnico só trabalha DENTRO da área (lab-area, com
                 // escopo por equipa via BoletimInternoPolicy). Deixou de ter
@@ -75,7 +75,7 @@ class RolePermissionSeeder extends Seeder
             AppRole::Recepcionista->value => [
                 // DEF-001/003: a Recepção (CGISC) é o único ponto de entrada e de
                 // saída — recepção/triagem/encaminhamento e emissão/entrega.
-                'view' => ['painel', 'perfil', 'analises', 'distribuicao', 'historico-alertas', 'documentos', 'processos', 'missoes', 'formacoes', 'investigacao', 'avaliacoes', 'lab-recepcao', 'lab-emissao'],
+                'view' => ['painel', 'perfil', 'analises', 'distribuicao', 'historico-alertas', 'documentos', 'processos', 'missoes', 'formacoes', 'investigacao', 'avaliacoes', 'lab-recepcao', 'lab-emissao', 'lab-exames'],
                 'write' => ['processos', 'lab-recepcao', 'lab-emissao'],
             ],
             AppRole::GestorStock->value => [
