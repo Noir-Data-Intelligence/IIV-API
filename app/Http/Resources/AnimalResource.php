@@ -18,6 +18,7 @@ class AnimalResource extends JsonResource
             'species' => $this->species,
             'breed' => $this->breed,
             'sex' => $this->sex,
+            'reproductiveStatus' => $this->reproductive_status,
             'birthDate' => $this->birth_date?->toDateString(),
             'motherTag' => $this->mother_tag,
             'fatherTag' => $this->father_tag,

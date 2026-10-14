@@ -18,8 +18,8 @@ class Animal extends Model
     public $timestamps = false;
 
     protected $fillable = [
-        'id', 'station_id', 'tag', 'name', 'species', 'breed', 'sex', 'birth_date',
-        'mother_tag', 'father_tag', 'status', 'current_weight_kg', 'notes', 'created_at',
+        'id', 'station_id', 'tag', 'name', 'species', 'breed', 'sex', 'reproductive_status',
+        'birth_date', 'mother_tag', 'father_tag', 'status', 'current_weight_kg', 'notes', 'created_at',
     ];
 
     protected function casts(): array

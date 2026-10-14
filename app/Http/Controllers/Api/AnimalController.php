@@ -133,6 +133,8 @@ class AnimalController extends Controller
             'species' => $validated['species'],
             'breed' => $validated['breed'] ?? null,
             'sex' => $validated['sex'] ?? 'femea',
+            // Só faz sentido para fêmeas — validado em AnimalRequest::withValidator().
+            'reproductive_status' => $validated['reproductiveStatus'] ?? null,
             'birth_date' => $validated['birthDate'] ?? null,
             'mother_tag' => $validated['motherTag'] ?? null,
             'father_tag' => $validated['fatherTag'] ?? null,

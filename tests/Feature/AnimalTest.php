@@ -144,4 +144,54 @@ class AnimalTest extends TestCase
 
         $this->actingAs($user)->postJson('/api/animais', ['species' => 'X'])->assertForbidden();
     }
+
+    public function test_estado_reprodutivo_e_aceite_para_femeas(): void
+    {
+        // CT-012 (relatório de QA, "Aprovado c/ Observação"): o campo Estado
+        // Reprodutivo faltava por completo — só faz sentido para fêmeas.
+        $estacao = Estacao::factory()->create();
+        $user = $this->comPapel(AppRole::GestorEstacao);
+
+        $animal = $this->actingAs($user)->postJson('/api/animais', [
+            'stationId' => $estacao->id, 'species' => 'bovino', 'sex' => 'femea',
+            'reproductiveStatus' => 'gestante',
+        ])->assertCreated()->json();
+
+        $this->assertSame('gestante', $animal['reproductiveStatus']);
+    }
+
+    public function test_estado_reprodutivo_e_rejeitado_para_machos(): void
+    {
+        $estacao = Estacao::factory()->create();
+        $user = $this->comPapel(AppRole::GestorEstacao);
+
+        $this->actingAs($user)->postJson('/api/animais', [
+            'stationId' => $estacao->id, 'species' => 'bovino', 'sex' => 'macho',
+            'reproductiveStatus' => 'gestante',
+        ])->assertStatus(422)->assertJsonValidationErrors('reproductiveStatus');
+    }
+
+    public function test_estado_reprodutivo_so_aceita_valores_do_dominio(): void
+    {
+        $estacao = Estacao::factory()->create();
+        $user = $this->comPapel(AppRole::GestorEstacao);
+
+        $this->actingAs($user)->postJson('/api/animais', [
+            'stationId' => $estacao->id, 'species' => 'bovino', 'sex' => 'femea',
+            'reproductiveStatus' => 'valor-invalido',
+        ])->assertStatus(422)->assertJsonValidationErrors('reproductiveStatus');
+    }
+
+    public function test_update_rejeita_estado_reprodutivo_quando_animal_existente_e_macho(): void
+    {
+        // `sex` é `sometimes` no update — a validação tem de usar o sexo já
+        // gravado no animal quando o pedido não o reenvia.
+        $animal = Animal::factory()->create(['sex' => 'macho']);
+        $user = $this->comPapel(AppRole::GestorEstacao);
+
+        $this->actingAs($user)->putJson("/api/animais/{$animal->id}", [
+            'stationId' => $animal->station_id, 'species' => $animal->species,
+            'reproductiveStatus' => 'cio',
+        ])->assertStatus(422)->assertJsonValidationErrors('reproductiveStatus');
+    }
 }
