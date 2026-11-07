@@ -1,4 +1,4 @@
-FROM php:8.2-fpm-alpine
+FROM php:8.4.27-fpm-alpine
 
 # Extensões nativas do Laravel + driver MySQL (BD real, externa e já
 # provisionada — ver SIG-IIV-MEMORIA-PROJETO.md secção 15/16. SQLite fica só
